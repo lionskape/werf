@@ -1,11 +1,21 @@
 ## Topnav single links
 ## if you want to list an external url, use external_url instead of url. the theme will apply a different link base.
 topnav:
-  - title: Installation
-    url: /documentation/guides/installation.html
-  - title: Documentation
-    url: /documentation/
-  - title: Publications
-    url: /publications.html
-  - title: Releases
-    url: /releases.html
+  en:
+     - title: Installation
+       url: /documentation/guides/installation.html
+     - title: Documentation
+       url: /documentation/
+     - title: Publications
+       url: /publications.html
+     - title: Releases
+       url: /releases.html
+  ru:
+     - title: Установка
+       url: /ru/documentation/guides/installation.html
+     - title: Документация
+       url: /ru/documentation/
+     - title: Публикации
+       url: /ru/publications.html
+     - title: Релизы
+       url: /releases.html

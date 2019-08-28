@@ -33,6 +33,7 @@ defaults:
     type: "pages"
   values:
     layout: "page"
+    lang: en
     comments: true
     search: true
     sidebar: sidebar
@@ -40,3 +41,11 @@ defaults:
 
 sidebars:
 - documentation
+
+t:
+  en:
+    breadcrumbs:
+      home: "Home"
+  ru:
+    breadcrumbs:
+      home: "Начало"

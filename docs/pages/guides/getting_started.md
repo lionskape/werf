@@ -3,6 +3,7 @@ title: Getting started
 sidebar: documentation
 permalink: documentation/guides/getting_started.html
 author: Artem Kladov <artem.kladov@flant.com>
+ref: guides_getting_started
 ---
 
 ## Task Overview

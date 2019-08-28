@@ -12,7 +12,7 @@
                 {% assign topnav = site.data[page.topnav] %}
                 {% assign topnav_dropdowns = site.data[page.topnav].topnav_dropdowns %}
 
-                    {% for folder in topnav.topnav %}
+                    {% for folder in topnav.topnav[page.lang] %}
                         {% comment %}
                         Notice:
                             Liquid engine is very poor in working with boolean logic.
@@ -22,9 +22,9 @@
                         <li class="header__menu-item
                             {% if folder.folderitems %}header__menu-item_parent{% endif %}
                             {% if folder.url.size>1 and page.url == folder.url %}header__menu-item_active{% endif %}
-                            {% if folder.url.size>1 and page.url != folder.url and page.url contains folder.url 
+                            {% if folder.url.size>1 and page.url != folder.url and page.url contains folder.url
                             and page.url != '/documentation/guides/installation.html' %}header__menu-item_active{% endif %}
-                            {% if folder.url.size>1 and page.url == '/publications_ru.html' 
+                            {% if folder.url.size>1 and page.url == '/publications_ru.html'
                             and folder.url == '/publications.html' %}header__menu-item_active{% endif %}
                             {% if folder.url.size<2 and page.url.size<2 %}header__menu-item_active{% endif %}">
                             {% if folder.title == 'Documentation' %}
@@ -74,6 +74,20 @@
                 <li class="header__menu-icon"><a href="https://cloud-native.slack.com/messages/CHY2THYUU" target="_blank" class="page__icon page__icon_slack"></a></li>
                 <li class="header__menu-icon"><a href="https://github.com/flant/werf" target="_blank" class="page__icon page__icon_github"></a></li>
                 <li class="header__menu-icon header__menu-icon_search"><a href="javascript:void(0)" class="page__icon page__icon_search"></a></li>
+                <!-- language button -->
+                <!-- todo  -->
+                <link rel="stylesheet" href="{{ site.baseurl }}/css/publications.css">
+                <!-- ^^^  todo  -->
+                <div>
+                     {% if page.ref %}
+                       {% assign pages=site.pages | where:"ref", page.ref | sort: 'lang' %}
+                       {% if pages.size > 1 %}
+                         {% for _page in pages %}
+                            <a href="{{ _page.url }}" class="publications__btn {% if _page.url == page.url %}active{% endif %}">{{ _page.lang }}</a>
+                         {% endfor %}
+                       {% endif %}
+                     {% endif %}
+                </div>
             </ul>
         </div>
     </div>
@@ -88,4 +102,3 @@
         </form>
     </div>
 </div>
-

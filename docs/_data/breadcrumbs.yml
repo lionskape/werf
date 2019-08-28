@@ -1,33 +1,63 @@
 /documentation:
   title: Documentation
   url: /documentation/index.html
+/ru/documentation:
+  title: Документация
+  url: /ru/documentation/index.html
 /documentation/configuration:
   title: Configuration
   url: /documentation/configuration/introduction.html
+/ru/documentation/configuration:
+  title: Конфигурация
+  url: /ru/documentation/configuration/introduction.html
 /documentation/configuration/stapel_image:
   title: Stapel Image
   url: /documentation/configuration/stapel_image/naming.html
+/ru/documentation/configuration/stapel_image:
+  title: Сборка со Stapel
+  url: /ru/documentation/configuration/stapel_image/naming.html
 /documentation/reference:
   title: Reference
   url: /documentation/reference/stages_and_images.html
+/ru/documentation/reference:
+  title: Справочник
+  url: /ru/documentation/reference/stages_and_images.html
 /documentation/reference/deploy_process:
   title: Deploy Process
   url: /documentation/reference/deploy_process/deploy_into_kubernetes.html
+/ru/documentation/reference/deploy_process:
+  title: Деплой
+  url: /ru/documentation/reference/deploy_process/deploy_into_kubernetes.html
 /documentation/reference/plugging_into_cicd:
   title: Plugging into CI/CD
   url: /documentation/reference/plugging_into_cicd/overview.html
+/ru/documentation/reference/plugging_into_cicd:
+  title: Работа с CI/CD
+  url: /ru/documentation/reference/plugging_into_cicd/overview.html
 /documentation/reference/development_and_debug:
   title: Development and Debug
   url: /documentation/reference/development_and_debug/setup_minikube.html
+/ru/documentation/reference/development_and_debug:
+  title: Разработка и отладка
+  url: /ru/documentation/reference/development_and_debug/setup_minikube.html
 /documentation/reference/toolbox:
   title: Toolbox
   url: /documentation/reference/toolbox/slug.html
+/ru/documentation/reference/toolbox:
+  title: Toolbox
+  url: /ru/documentation/reference/toolbox/slug.html
 /documentation/guides:
   title: Guides
   url: /documentation/guides/installation.html
+/ru/documentation/guides:
+  title: Руководства
+  url: /ru/documentation/guides/installation.html
 /documentation/guides/advanced_build:
   title: Advanced Build
   url: /documentation/guides/advanced_build/first_application.html
+/ru/documentation/guides/advanced_build:
+  title: Расширенная сборка
+  url: /ru/documentation/guides/advanced_build/first_application.html
 /documentation/cli:
   title: CLI Commands
   url: /documentation/cli/main/build.html

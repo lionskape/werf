@@ -1,14 +1,14 @@
 ---
 title: Overview
-permalink: documentation/index.html
+permalink: ru/documentation/index.html
 sidebar: documentation
 ref: documentation
-lang: en
+lang: ru
 ---
 
-Documentation of Werf comprises ~100 articles which include common use cases (getting started, deploy to Kubernetes, CI/CD integration and more), comprehensive description of its functions & architecture, as well as CLI, commands.
+Документация содержит более 100 различных статей, включая наиболее типичные примеры использования Werf, подробное описание функций, архитектуры и параметров вызова.
 
-We recommend to start discovering from our **Guides** section:
+Мы рекомендуем начинать знакомство с раздела "Руководства":
 
 - [Installation]({{ site.baseurl }}/documentation/guides/installation.html) describes Werf dependencies and different installation methods.
 - [Getting started]({{ site.baseurl }}/documentation/guides/getting_started.html) helps to start using Werf with regular Dockerfile. Take your project and put into Werf easily just now.
