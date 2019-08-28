@@ -1,0 +1,26 @@
+---
+layout: null
+search: exclude
+---
+
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">>
+
+    {% for page in site.pages %}
+    <url>
+        <loc>{{ site.url }}{{ site.baseurl }}{{ page.url }}</loc>
+{%- if page.ref %}
+{%- assign versions=site.pages | where:"ref", page.ref %}
+{%- if versions.size > 1 %}
+{%- for version in versions %}
+        <xhtml:link rel="alternate" hreflang="{{ version.lang }}" href="{{ site.url }}{{ site.baseurl }}{{ version.url }}" />
+{%- endfor %}
+{%- endif %}
+{%- endif %}
+        <lastmod>{{ site.time | date: '%Y-%m-%d' }}</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.5</priority>
+    </url>
+    {%- endfor %}
+</urlset>
