@@ -3,6 +3,7 @@ output: web
 topnav_title: Werf Documentation
 site_title: Werf Documentation
 company_name: Flant
+url: https://werf.io
 
 exclude:
 - .idea/
