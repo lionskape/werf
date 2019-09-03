@@ -1,5 +1,5 @@
 ---
-title: Overview
+title: Обзор
 permalink: ru/documentation/index.html
 sidebar: documentation
 ref: documentation
