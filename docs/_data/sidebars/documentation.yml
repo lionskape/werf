@@ -380,34 +380,34 @@ entries:
       - title: Руководства
         sf:
           - title: Установка
-            url: /documentation/guides/installation.html
+            url: /ru/documentation/guides/installation.html
 
           - title: Первые шаги
             url: /ru/documentation/guides/getting_started.html
 
           - title: Деплой в Kubernetes
-            url: /documentation/guides/deploy_into_kubernetes.html
+            url: /ru/documentation/guides/deploy_into_kubernetes.html
 
           - title: Интеграция с Gitlab CI/CD
-            url: /documentation/guides/gitlab_ci_cd_integration.html
+            url: /ru/documentation/guides/gitlab_ci_cd_integration.html
 
           - title: Интеграция с другими CI/CD системами
-            url: /documentation/guides/unsupported_ci_cd_integration.html
+            url: /ru/documentation/guides/unsupported_ci_cd_integration.html
 
           - title: Расширенная сборка
             sfi:
 
               - title: Первое приложение
-                url: /documentation/guides/advanced_build/first_application.html
+                url: /ru/documentation/guides/advanced_build/first_application.html
 
               - title: Приложение с несколькими образами
-                url: /documentation/guides/advanced_build/multi_images.html
+                url: /ru/documentation/guides/advanced_build/multi_images.html
 
               - title: Использование монтирования
-                url: /documentation/guides/advanced_build/mounts.html
+                url: /ru/documentation/guides/advanced_build/mounts.html
 
               - title: Использование артифактов
-                url: /documentation/guides/advanced_build/artifacts.html
+                url: /ru/documentation/guides/advanced_build/artifacts.html
 
       - title: CLI Commands
         sf:

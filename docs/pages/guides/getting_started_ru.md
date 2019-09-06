@@ -29,7 +29,7 @@ source <(multiwerf use 1.0 beta)
 
 ## Шаг 1: Добавьте конфигурацию Werf
 
-В код приложения добавьте фаил `werf.yaml`, описывающий конфигурацию сборки образа приложения с ипользованием существующего в проекте [Dockerfile](https://github.com/dockersamples/linux_tweet_app/blob/master/Dockerfile).
+В код приложения добавьте файл `werf.yaml`, описывающий конфигурацию сборки образа приложения с ипользованием существующего в проекте [Dockerfile](https://github.com/dockersamples/linux_tweet_app/blob/master/Dockerfile).
 
 1. Клонируйте репозиторий приложения [Linux Tweet App](https://github.com/dockersamples/linux_tweet_app):
 
@@ -38,7 +38,7 @@ source <(multiwerf use 1.0 beta)
     cd linux_tweet_app
     ```
 
-1.  В корневой папке приложения создайте фаил `werf.yaml`, со следующим содержимым:
+1.  В корневой папке приложения создайте файл `werf.yaml`, со следующим содержимым:
 
     ```yaml
     project: g-started
@@ -76,7 +76,7 @@ source <(multiwerf use 1.0 beta)
     docker run -d -p 5000:5000 --restart=always --name registry registry:2
     ```
 
-2. Загрузите образ приложения в Docker registry, предвариетльно протэгировав его тэгом `v0.1.0`:
+2. Загрузите образ приложения в Docker registry, предвариетльно протегировав его тегом `v0.1.0`:
 
     ```shell
     werf publish --stages-storage :local --images-repo localhost:5000/g-started --tag-custom v0.1.0
