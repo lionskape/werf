@@ -211,9 +211,12 @@ minikube addons enable ingress
 werf deploy --stages-storage :local --images-repo :minikube --tag-custom myapp --env dev
 ```
 
-После запуска команды, werf создаст соответсвующие ресурсы в Kubernetes и будет отслеживать статус Deployment'а `myapp-backend` до его готовности (готовности всех pod'ов) либо ошибки..
+После запуска команды, werf создаст соответствующие ресурсы в Kubernetes и будет отслеживать статус Deployment'а `myapp-backend` до его готовности (готовности всех pod'ов) либо ошибки.
 
-[Environment]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#environment) `--env` is a required param needed to generate helm release name and kubernetes namespace.
+Для того, чтобы сформировать правильные — имя helm-релиза и namespace, требуется указать [окружение]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#environment), с помощью параметра `--env`.
+
+В результате будет создан helm-релиз с именем `myapp-dev`. Название helm-релиза состоит из [имени проекта]({{ site.baseurl }}/ru/documentation/configuration/introduction.html#meta-configuration-doc) `myapp` (указанного в `werf.yaml`) и переданного названия окружения `dev`. Более подробно про формирование имен helm-релизов смотри в [документации]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#release-name).
+
 
 Helm release with name `myapp-dev` will be created. This name consists of [project name]({{ site.baseurl }}/documentation/configuration/introduction.html#meta-configuration-doc) `myapp` (which you've placed in the `werf.yaml`) and specified environment `dev`. Check docs for details about [helm release name generation]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#release-name).
 
