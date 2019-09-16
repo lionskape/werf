@@ -1,26 +1,27 @@
 ---
-title: Unsupported CI/CD integration
+title: Интеграция с другими CI/CD системами
 sidebar: documentation
-permalink: documentation/guides/unsupported_ci_cd_integration.html
+permalink: ru/documentation/guides/unsupported_ci_cd_integration.html
 author: Timofey Kirillov <timofey.kirillov@flant.com>
 ref: documentation_guides_unsupported_ci_cd_integration
+lang: ru
 ---
 
-Werf for now only supports [Gitlab CI system]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/gitlab_ci.html). Support for top-10 popular CI systems [coming soon](https://github.com/flant/werf/issues/1682).
+В настоящий момент Werf поддерживает только работу с [Gitlab CI]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/gitlab_ci.html). Мы планируем в [скором будущем](https://github.com/flant/werf/issues/1682) обеспечить поддержку top-10 популярных CI систем.
 
-To use werf with any CI/CD system that does not supported yet user should perform procedures described in the [what is ci-env]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/overview.html#what-is-ci-env) by own script.
+Чтобы использовать Werf с любой CI/CD системой которая пока не поддерживается, необходимо выполнить шаги описанные [здесь]({{ site.baseurl }}/ru/documentation/reference/plugging_into_cicd/overview.html#what-is-ci-env), с помощью собственного скрипта. Запуск такого скрипта нужно производить вместо вызова команды `werf ci-env`, но поведение скрипта должно быть похожим на результат выполнения команды `werf ci-env`. Запуск скрипта также должен осуществляться перед выполнением любых других команд werf, вначале задания CI/CD.
 
-The behaviour of `werf ci-env` command should be resembled (without actual using of this command) prior running any werf command in the begin of CI/CD job. This is accoumplished by some actions and defining environment variables from [the list of environment variables]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/overview.html#complete-list-of-ci-env-params-and-customizing).
+Необходимого результата можно добиться выполнив некоторые действия и определив ряд переменных окружения из [списка]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/overview.html#complete-list-of-ci-env-params-and-customizing).
 
 ## Ci-env procedures
 
-### Docker registry integration
+### Интеграция с Docker registry
 
-According to [docker registry integration]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/overview.html#docker-registry-integration) procedure, variables to define:
+Согласно процедуре [интеграции с Docker registry]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/overview.html#docker-registry-integration), необходимо определить следующие переменные:
  * [`DOCKER_CONFIG`]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/overview.html#docker_config);
  * [`WERF_IMAGES_REPO`]({{ site.baseurl }}/documentation/reference/plugging_into_cicd/overview.html#werf_images_repo).
 
-Create temporal docker config in the current job dir:
+Также необходимо создать папку для временного файла конфигурации docker в рамках выполнения задания. Пример:
 
 ```bash
 mkdir .docker

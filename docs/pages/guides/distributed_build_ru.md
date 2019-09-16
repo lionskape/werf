@@ -1,12 +1,13 @@
 ---
-title: Distributed build with GitLab
+title: Распределенная сборка с GitLab
 sidebar: documentation
-permalink: documentation/guides/distributed_build.html
+permalink: ru/documentation/guides/distributed_build.html
 author: Artem Kladov <artem.kladov@flant.com>
 ref: documentation_guides_distributed_build
+lang: ru
 ---
 
-## Task Overview
+## Обзор задачи
 
 Werf can store [_stages cache_]({{ site.baseurl }}/documentation/reference/stages_and_images.html#what-is-a-stage) in a Docker registry. It gives an opportunity to use a distributed build in the following cases:
 * **Dynamic resources.** You can setup a dynamic allocation of resources for building by using cloud providers. These resources can be temporary, so in build time a stages cache may be absent.

@@ -15,15 +15,15 @@ Werf использует (с некоторыми изменениями и д�
 
 ## Требования
 
- * Работающий кластер Kubernetes. Для выполнения примера вы можете использовать как обычный Kubernetes кластер, так и Minikube. Если вы решили использовать Minikube, прочитайте [статью о настройке Minikube]({{ site.baseurl }}/ru/documentation/reference/development_and_debug/setup_minikube.html), чтобы запустить Minikube и Docker-registry.
- * Работающий Docker-registry.
+ * Работающий кластер Kubernetes. Для выполнения примера вы можете использовать как обычный Kubernetes кластер, так и Minikube. Если вы решили использовать Minikube, прочитайте [статью о настройке Minikube]({{ site.baseurl }}/ru/documentation/reference/development_and_debug/setup_minikube.html), чтобы запустить Minikube и Docker registry.
+ * Работающий Docker registry.
    * Доступ от хостов Kubernetes с правами на push образов в registry.
    * Доступ от хостов Kubernetes с правами на pull образов в registry.
  * Установленные [зависимости Werf]({{ site.baseurl }}/ru/documentation/guides/installation.html#install-dependencies).
  * Установленный [Multiwerf](https://github.com/flant/multiwerf).
  * Установленный `kubectl` и сконфигурированный для доступа в кластер Kubernetes (<https://kubernetes.io/docs/tasks/tools/install-kubectl/>).
 
-**Внимание!** Далее, в качестве адреса репозитория мы будем использовать значение — `:minikube` . Если вы используете ваш существующий кластер Kubernetes и отдельный экземпляр Docker-registry, указывайте его вместо аргумента `:minikube`.
+**Внимание!** Далее, в качестве адреса репозитория мы будем использовать значение — `:minikube` . Если вы используете ваш существующий кластер Kubernetes и отдельный экземпляр Docker registry, указывайте его вместо аргумента `:minikube`.
 
 
 ### Выбор версии Werf
@@ -94,13 +94,13 @@ ansible:
 
 Наше web-приложение состоит из единственной статической HTML-страницы, которая создается прямо на этапе сборки образа, в инструкциях сборки. Содержимое этой страницы будет отдавать Python HTTP-сервер.
 
-Соберите образ приложения и загрузите его в Docker-registry:
+Соберите образ приложения и загрузите его в Docker registry:
 
 ```shell
 werf build-and-publish --stages-storage :local --tag-custom myapp --images-repo :minikube
 ```
 
-Название собранного образа приложения состоит из адреса Docker-registry (`REPO`) и тега (`TAG`). При указании `:minikube` в качестве адреса Docker-registry, Werf использует в качестве адреса Docker-registry адрес `werf-registry.kube-system.svc.cluster.local:5000/myapp`. Так как мы указали в качестве тега образа тег `myapp`, Werf загрузит в Docker-registry образ `werf-registry.kube-system.svc.cluster.local:5000/myapp:myapp`.
+Название собранного образа приложения состоит из адреса Docker registry (`REPO`) и тега (`TAG`). При указании `:minikube` в качестве адреса Docker registry, Werf использует в качестве адреса Docker registry адрес `werf-registry.kube-system.svc.cluster.local:5000/myapp`. Так как мы указали в качестве тега образа тег `myapp`, Werf загрузит в Docker registry образ `werf-registry.kube-system.svc.cluster.local:5000/myapp:myapp`.
 
 ## Подготовка конфигурации деплоя
 
@@ -197,7 +197,7 @@ spec:
 
 Эта конфигурация описывает Ingress-ресурс, и настраивает NGINX прокси-сервер перенаправлять трафик для хоста `myapp.local` на наш backend-сервер `myapp-backend`.
 
-## Run deploy
+## Деплой
 
 Если вы используете `minikube`, перед деплоем включите ingress-модуль:
 
@@ -213,39 +213,35 @@ werf deploy --stages-storage :local --images-repo :minikube --tag-custom myapp -
 
 После запуска команды, werf создаст соответствующие ресурсы в Kubernetes и будет отслеживать статус Deployment'а `myapp-backend` до его готовности (готовности всех pod'ов) либо ошибки.
 
-Для того, чтобы сформировать правильные — имя helm-релиза и namespace, требуется указать [окружение]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#environment), с помощью параметра `--env`.
+Для того, чтобы сформировать правильные — имя helm-релиза и namespace, требуется указать [окружение]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#environment) с помощью параметра `--env`.
 
-В результате будет создан helm-релиз с именем `myapp-dev`. Название helm-релиза состоит из [имени проекта]({{ site.baseurl }}/ru/documentation/configuration/introduction.html#meta-configuration-doc) `myapp` (указанного в `werf.yaml`) и переданного названия окружения `dev`. Более подробно про формирование имен helm-релизов смотри в [документации]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#release-name).
+В результате будет создан helm-релиз с именем `myapp-dev`. Название helm-релиза состоит из [имени проекта]({{ site.baseurl }}/ru/documentation/configuration/introduction.html#meta-configuration-doc) `myapp` (указанного в `werf.yaml`), и переданного названия окружения — `dev`. Более подробно про формирование имен helm-релизов смотри в [документации]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#release-name).
 
+При создании объектов Kubernetes будет использоваться namespace `myapp-dev`. Имя этого namespace'а также состоит из [имени проекта]({{ site.baseurl }}/ru/documentation/configuration/introduction.html#meta-configuration-doc) `myapp` (указанного в `werf.yaml`), и переданного названия окружения — `dev`. Более подробно про формирование namespace в kubernetes смотри в [документации]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#kubernetes-namespace).
 
-Helm release with name `myapp-dev` will be created. This name consists of [project name]({{ site.baseurl }}/documentation/configuration/introduction.html#meta-configuration-doc) `myapp` (which you've placed in the `werf.yaml`) and specified environment `dev`. Check docs for details about [helm release name generation]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#release-name).
+## Проверка работы приложения
 
-Kubernetes namespace `myapp-dev` will also be used. This name also consists of [project name]({{ site.baseurl }}/documentation/configuration/introduction.html#meta-configuration-doc) `myapp` and specified environment `dev`. Check docs for details about [kubernetes namespace generation]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#kubernetes-namespace).
-
-## Check your application
-
-Now it is time to know the IP address of your kubernetes cluster. If you use minikube get it with (in the most cases the IP address will be `192.168.99.100`):
-
+Самое время узнать ip-адрес вашего кластера. Если вы используете minikube, то узнать ip-адрес можно следующим способом (обычно это `192.168.99.100`):
 ```shell
 minikube ip
 ```
 
-Make sure that host name `myapp.local` is resolving to this IP address on your machine. For example append this record to the `/etc/hosts` file:
+Убедитесь, что имя `myapp.local` разрешается в полученный IP-адрес вашего кластера на вашей машине. Например, добавьте соответствующую запись в файл `/etc/hosts`:
 
 ```shell
 192.168.99.100 myapp.local
 ```
 
-Then you can check application by url: `http://myapp.local`.
+Проверьте работу приложения, открыв адрес `http://myapp.local`.
 
-## Delete application from kubernetes
+## Удаление приложение из кластера
 
-To completely remove deployed application run this dismiss werf command:
+Для полного удаления из кластера развернутого приложения, запустите следующую команду:
 
 ```shell
 werf dismiss --env dev --with-namespace
 ```
 
-## See also
+## Читайте также
 
-For all werf deploy features such as secrets [take a look at reference]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html).
+Более подробно об особенностях и возможностях деплоя приложений с помощью werf, например об использовании секретов [читайте в руководстве]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html).

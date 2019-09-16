@@ -9,7 +9,7 @@ ref: guides_getting_started
 
 ## Обзор задачи
 
-В статье рассматривается как быстро начать работу с Werf используя существующий в проекте Dockerfile. Мы выполним сборку Docker-образа приложения и загрузим его в Docker-registry.
+В статье рассматривается как быстро начать работу с Werf используя существующий в проекте Dockerfile. Мы выполним сборку Docker-образа приложения и загрузим его в Docker registry.
 
 В качестве примера приложения будем использовать [Linux Tweet App](https://github.com/dockersamples/linux_tweet_app).
 
