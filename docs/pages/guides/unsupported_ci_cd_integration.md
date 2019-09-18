@@ -87,5 +87,5 @@ Copy following script and place into `werf-ci-env-cleanup.sh`:
 rm -rf .docker
 ```
 
-`werf-ci-env.sh` should be called in the beginning of everr CI/CD job prior running any werf commands.
+`werf-ci-env.sh` should be called in the beginning of every CI/CD job prior running any werf commands.
 `werf-ci-env-cleanup.sh` should be called in the end of every CI/CD job.

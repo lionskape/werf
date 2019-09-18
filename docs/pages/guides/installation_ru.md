@@ -1,12 +1,14 @@
 ---
-title: Installation
+title: Установка
 sidebar: documentation
 permalink: ru/documentation/guides/installation.html
 author: Alexey Igrychev <alexey.igrychev@flant.com>
+ref: documentation_guides_installation
+lang: ru
 ---
 
-{% include /readme/installation.md %}
+{% include /readme/installation_ru.md %}
 
 # Backward Compatibility Promise
 
-{% include /readme/backward_compatibility_promise.md %}
+{% include /readme/backward_compatibility_promise_ru.md %}
