@@ -37,7 +37,6 @@ import (
 var (
 	tillerReleaseServer = &tiller.ReleaseServer{}
 	tillerSettings      = tiller_env.New()
-	kubeClient          *KubeClient
 	helmSettings        helm_env.EnvSettings
 	resourcesWaiter     *ResourcesWaiter
 	releaseLogMessages  []string
@@ -53,8 +52,16 @@ var (
 	ConfigMapStorage = "configmap"
 	SecretStorage    = "secret"
 
+	LoadChartfileFunc = func(chartPath string) (*chart.Chart, error) {
+		return chartutil.Load(chartPath)
+	}
+
 	ErrNoSuccessfullyDeployedReleaseRevisionFound = errors.New("no DEPLOYED release revision found")
 )
+
+func loadChartfile(chartPath string) (*chart.Chart, error) {
+	return LoadChartfileFunc(chartPath)
+}
 
 type InitOptions struct {
 	KubeConfig                  string
@@ -73,7 +80,6 @@ func Init(options InitOptions) error {
 		tillerSettings.EngineYard[WerfTemplateEngineName] = WerfTemplateEngine
 
 		tillerReleaseServer = tiller.NewReleaseServer(tillerSettings, nil, false)
-		tillerReleaseServer.ReleaseModule = &ReleaseModule{tillerReleaseServer.ReleaseModule}
 		tillerReleaseServer.Log = func(f string, args ...interface{}) {
 			msg := fmt.Sprintf(fmt.Sprintf("Release server: %s", f), args...)
 			releaseLogMessages = append(releaseLogMessages, msg)
@@ -91,7 +97,7 @@ func Init(options InitOptions) error {
 	configFlags.KubeConfig = &helmSettings.KubeConfig
 	configFlags.Namespace = &options.HelmReleaseStorageNamespace
 
-	kubeClient = &KubeClient{Client: kube.New(configFlags)}
+	kubeClient := kube.New(configFlags)
 	kubeClient.Log = func(f string, args ...interface{}) {
 		msg := fmt.Sprintf(fmt.Sprintf("Kube client: %s", f), args...)
 		releaseLogMessages = append(releaseLogMessages, msg)
@@ -151,7 +157,6 @@ func Init(options InitOptions) error {
 	}
 
 	tillerReleaseServer = tiller.NewReleaseServer(tillerSettings, clientset, false)
-	tillerReleaseServer.ReleaseModule = &ReleaseModule{tillerReleaseServer.ReleaseModule}
 	tillerReleaseServer.Log = func(f string, args ...interface{}) {
 		msg := fmt.Sprintf(fmt.Sprintf("Release server: %s", f), args...)
 		releaseLogMessages = append(releaseLogMessages, msg)
@@ -269,7 +274,7 @@ func ReleaseInstall(chartPath, releaseName, namespace string, values, set, setSt
 	}
 
 	// Check chart requirements to make sure all dependencies are present in /charts
-	loadedChart, err := chartutil.Load(chartPath)
+	loadedChart, err := loadChartfile(chartPath)
 	if err != nil {
 		return err
 	}
@@ -306,7 +311,7 @@ func ReleaseUpdate(chartPath, releaseName string, values, set, setString []strin
 	}
 
 	// Check chart requirements to make sure all dependencies are present in /charts
-	loadedChart, err := chartutil.Load(chartPath)
+	loadedChart, err := loadChartfile(chartPath)
 	if err == nil {
 		if req, err := chartutil.LoadRequirements(loadedChart); err == nil {
 			if err := renderutil.CheckDependencies(loadedChart, req); err != nil {
@@ -466,6 +471,7 @@ func releaseRollback(releaseName string, revision int32, opts releaseRollbackOpt
 }
 
 func displayReleaseLogMessages() {
+	logboek.LogOptionalLn()
 	logboek.LogBlock("Debug info", logboek.LogBlockOptions{}, func() {
 		for _, msg := range releaseLogMessages {
 			_, _ = logboek.OutF("%s\n", logboek.ColorizeInfo(msg))

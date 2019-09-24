@@ -27,7 +27,7 @@ import (
 )
 
 type ResourcesWaiter struct {
-	Client                    *KubeClient
+	Client                    *helmKube.Client
 	LogsFromTime              time.Time
 	StatusProgressPeriod      time.Duration
 	HooksStatusProgressPeriod time.Duration
@@ -141,6 +141,7 @@ func (waiter *ResourcesWaiter) WaitForResources(timeout time.Duration, created h
 		}
 	}
 
+	logboek.LogOptionalLn()
 	return logboek.LogProcess("Waiting for release resources to become ready", logboek.LogProcessOptions{}, func() error {
 		return multitrack.Multitrack(kube.Kubernetes, specs, multitrack.MultitrackOptions{
 			StatusProgressPeriod: waiter.StatusProgressPeriod,

@@ -1,16 +1,16 @@
 package deploy
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"strings"
+	"path/filepath"
 
 	"github.com/flant/logboek"
 
 	"github.com/flant/werf/cmd/werf/common"
 	"github.com/flant/werf/pkg/config"
 	"github.com/flant/werf/pkg/deploy/helm"
+	"github.com/flant/werf/pkg/deploy/werf_chart"
 	"github.com/flant/werf/pkg/tag_strategy"
 )
 
@@ -33,7 +33,7 @@ func RunLint(projectDir string, werfConfig *config.WerfConfig, opts LintOptions)
 		return err
 	}
 
-	imagesRepoManager, err := common.GetImagesRepoManager("REPO", common.MultirepImagesRepoMode)
+	imagesRepoManager, err := common.GetImagesRepoManager("REPO", common.MultirepoImagesRepoMode)
 	if err != nil {
 		return err
 	}
@@ -49,13 +49,16 @@ func RunLint(projectDir string, werfConfig *config.WerfConfig, opts LintOptions)
 		return fmt.Errorf("error creating service values: %s", err)
 	}
 
-	werfChart, err := PrepareWerfChart(GetTmpWerfChartPath(werfConfig.Meta.Project), werfConfig.Meta.Project, projectDir, opts.Env, m, opts.SecretValues, serviceValues)
+	projectChartDir := filepath.Join(projectDir, werf_chart.ProjectHelmChartDirName)
+	werfChart, err := PrepareWerfChart(werfConfig.Meta.Project, projectChartDir, opts.Env, m, opts.SecretValues, serviceValues)
 	if err != nil {
 		return err
 	}
-	defer ReleaseTmpWerfChart(werfChart.ChartDir)
 
-	if err := helm.Lint(
+	helm.WerfTemplateEngine.InitWerfEngineExtraTemplatesFunctions(werfChart.DecodedSecretFiles)
+	patchLoadChartfile(werfChart.Name)
+
+	return helm.Lint(
 		os.Stdout,
 		werfChart.ChartDir,
 		namespace,
@@ -63,12 +66,5 @@ func RunLint(projectDir string, werfConfig *config.WerfConfig, opts LintOptions)
 		append(werfChart.Set, opts.Set...),
 		append(werfChart.SetString, opts.SetString...),
 		helm.LintOptions{Strict: true},
-	); err != nil {
-		replaceOld := fmt.Sprintf("%s/", werfChart.Name)
-		replaceNew := fmt.Sprintf("%s/", ".helm")
-		errMsg := strings.Replace(err.Error(), replaceOld, replaceNew, -1)
-		return errors.New(errMsg)
-	}
-
-	return nil
+	)
 }

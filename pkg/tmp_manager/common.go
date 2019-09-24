@@ -19,6 +19,7 @@ const (
 	ProjectDirPrefix       = CommonPrefix + "project-data-"
 	DockerConfigDirPrefix  = CommonPrefix + "docker-config-"
 	WerfConfigRenderPrefix = CommonPrefix + "config-render-"
+	HelmTmpChartDestPrefix = CommonPrefix + "helm-chart-dest-"
 )
 
 func GetServiceTmpDir() string {
@@ -31,6 +32,19 @@ func GetCreatedTmpDirs() string {
 
 func GetReleasedTmpDirs() string {
 	return filepath.Join(GetServiceTmpDir(), "released")
+}
+
+func CreateHelmTmpChartDestDir() (string, error) {
+	newDir, err := newTmpDir(HelmTmpChartDestPrefix)
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.Chmod(newDir, 0700); err != nil {
+		return "", err
+	}
+
+	return newDir, nil
 }
 
 func registerCreatedPath(newPath, createdPathsDir string) error {
@@ -68,14 +82,6 @@ func newTmpDir(prefix string) (string, error) {
 	newDir, err := ioutil.TempDir(werf.GetTmpDir(), prefix)
 	if err != nil {
 		return "", err
-	}
-
-	if runtime.GOOS == "darwin" {
-		dir, err := filepath.EvalSymlinks(newDir)
-		if err != nil {
-			return "", fmt.Errorf("eval symlinks of path %s failed: %s", newDir, err)
-		}
-		newDir = dir
 	}
 
 	return newDir, nil

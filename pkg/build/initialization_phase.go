@@ -22,7 +22,6 @@ import (
 
 	"github.com/flant/werf/pkg/build/stage"
 	"github.com/flant/werf/pkg/config"
-	"github.com/flant/werf/pkg/docker_registry"
 	"github.com/flant/werf/pkg/git_repo"
 	"github.com/flant/werf/pkg/logging"
 	"github.com/flant/werf/pkg/slug"
@@ -118,31 +117,11 @@ func prepareImageBasedOnStapelImageConfig(imageInterfaceConfig config.StapelImag
 func handleImageFromName(from string, fromLatest bool, image *Image, c *Conveyor) error {
 	image.baseImageName = from
 
-	var baseImageRepoErr error
-	baseImageRepoId, exist := c.baseImagesRepoIdsCache[from]
-	if !exist {
-		processMsg := fmt.Sprintf("Trying to get from base image id from registry (%s)", from)
-		if err := logboek.LogProcessInline(processMsg, logboek.LogProcessInlineOptions{}, func() error {
-			baseImageRepoId, baseImageRepoErr = docker_registry.ImageId(from)
-			if fromLatest {
-				return fmt.Errorf("can not get base image id from registry (%s): %s", from, baseImageRepoErr)
-			}
-
-			return nil
-		}); err != nil {
+	if fromLatest {
+		if _, err := image.getFromBaseImageIdFromRegistry(c); err != nil {
 			return err
 		}
-	} else {
-		baseImageRepoErr, _ = c.baseImagesRepoErrCache[from]
 	}
-
-	image.baseImageRepoId = baseImageRepoId
-	image.baseImageRepoErr = baseImageRepoErr
-
-	image.baseImageLatest = fromLatest
-
-	c.baseImagesRepoIdsCache[from] = baseImageRepoId
-	c.baseImagesRepoErrCache[from] = baseImageRepoErr
 
 	return nil
 }
@@ -482,6 +461,8 @@ func gitRemoteArtifactInit(remoteGitMappingConfig *config.GitRemote, remoteGitRe
 
 	gitMapping.GitRepoInterface = remoteGitRepo
 
+	gitMapping.GitRepoCache = c.GetGitRepoCache(remoteGitRepo.GetName())
+
 	return gitMapping
 }
 
@@ -493,6 +474,8 @@ func gitLocalPathInit(localGitMappingConfig *config.GitLocal, localGitRepo *git_
 	gitMapping.Name = "own"
 
 	gitMapping.GitRepoInterface = localGitRepo
+
+	gitMapping.GitRepoCache = c.GetGitRepoCache(localGitRepo.GetName())
 
 	return gitMapping
 }
@@ -595,15 +578,32 @@ func prepareImageBasedOnImageFromDockerfile(imageFromDockerfileConfig *config.Im
 	}
 
 	var dockerignorePatternsWithContextPrefix []string
-	for _, pattern := range dockerignorePatterns {
-		var resultPattern string
-		if strings.HasPrefix(pattern, "!") {
-			resultPattern = "!" + path.Join(contextDir, pattern[1:])
-		} else {
-			resultPattern = path.Join(contextDir, pattern)
+	for _, dockerignorePattern := range dockerignorePatterns {
+		patterns := []string{dockerignorePattern}
+		specialPrefixes := []string{
+			"**/",
+			"/**/",
+			"!**/",
+			"!/**/",
 		}
 
-		dockerignorePatternsWithContextPrefix = append(dockerignorePatternsWithContextPrefix, resultPattern)
+		for _, prefix := range specialPrefixes {
+			if strings.HasPrefix(dockerignorePattern, prefix) {
+				patterns = append(patterns, strings.Replace(dockerignorePattern, "**/", "", 1))
+				break
+			}
+		}
+
+		for _, pattern := range patterns {
+			var resultPattern string
+			if strings.HasPrefix(pattern, "!") {
+				resultPattern = "!" + path.Join(contextDir, pattern[1:])
+			} else {
+				resultPattern = path.Join(contextDir, pattern)
+			}
+
+			dockerignorePatternsWithContextPrefix = append(dockerignorePatternsWithContextPrefix, resultPattern)
+		}
 	}
 
 	dockerignorePatternMatcher, err := fileutils.NewPatternMatcher(dockerignorePatternsWithContextPrefix)
@@ -638,14 +638,16 @@ func prepareImageBasedOnImageFromDockerfile(imageFromDockerfileConfig *config.Im
 	dockerArgsHash := map[string]string{}
 	var dockerMetaArgsString []string
 	for _, arg := range dockerMetaArgs {
-		dockerMetaArgsString = append(dockerMetaArgsString, fmt.Sprintf("%s=%s", arg.Key, arg.ValueString()))
 		dockerArgsHash[arg.Key] = arg.ValueString()
 	}
 
 	for key, valueInterf := range imageFromDockerfileConfig.Args {
 		value := fmt.Sprintf("%v", valueInterf)
-		dockerMetaArgsString = append(dockerMetaArgsString, fmt.Sprintf("%s=%v", key, value))
 		dockerArgsHash[key] = value
+	}
+
+	for key, value := range dockerArgsHash {
+		dockerMetaArgsString = append(dockerMetaArgsString, fmt.Sprintf("%s=%v", key, value))
 	}
 
 	shlex := shell.NewLex(parser.DefaultEscapeToken)

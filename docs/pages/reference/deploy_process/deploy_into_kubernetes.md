@@ -70,9 +70,7 @@ With go templates user can:
  * define common text parts as named golang templates and reuse them in several places;
  * etc.
 
-[Sprig functions](https://masterminds.github.io/sprig/) are available for users (except envrionment access functions such as `env`).
-
-Also check out [advanced functions](https://docs.helm.sh/developing_charts/#chart-development-tips-and-tricks) for templates like `include` and `required`.
+[Sprig functions](https://masterminds.github.io/sprig/) and [advanced functions](https://docs.helm.sh/developing_charts/#chart-development-tips-and-tricks), like `include` and `required`, can be used in templates. 
 
 Also user can place `*.tpl` files, which will not be rendered into kubernetes specs. These files can be used to store arbitrary custom golang templates and definitions. All templates and definitions from `*.tpl` files will be available for the use in the `*.yaml` files.
 
@@ -82,15 +80,15 @@ To use docker images in the chart resources specs user must specify full docker 
 
 The second question is how to use [`imagePullPolicy` kubernetes parameter](https://kubernetes.io/docs/concepts/containers/images/#updating-images) together with images from `werf.yaml`: should user set `imagePullPolicy` to `Always`, how to pull images only when there is a need to pull?
 
-To answer these questions werf has 2 template functions `werf_container_image` and `werf_container_env`.  User must use these template functions to specify images from `werf.yaml` in the chart templates safely and correctly.
+To answer these questions werf has runtime functions, `werf_container_image` and `werf_container_env`.  User must use these template functions to specify images from `werf.yaml` in the chart templates safely and correctly.
 
 ##### werf_container_image
 
 The template function generates `image` and `imagePullPolicy` keys for the pod container.
 
-A specific feature of the template is that `imagePullPolicy` is generated based on the `.Values.global.werf.is_branch` value, if tags are used, `imagePullPolicy: Always` is not set. So in the result images are pulled always only for the images tagged by git-branch names (because docker image id can be changed for the same docker image name).
+A specific feature of the function is that `imagePullPolicy` is generated based on the `.Values.global.werf.is_branch` value, if tags are used, `imagePullPolicy: Always` is not set. So in the result images are pulled always only for the images tagged by git-branch names (because docker image id can be changed for the same docker image name).
 
-The template may return multiple strings, which is why it must be used together with the `indent` construction.
+The function may return multiple strings, which is why it must be used together with the `indent` construction.
 
 The logic of generating the `imagePullPolicy` key:
 * The `.Values.global.werf.is_branch=true` value means that an image is being deployed based on the `latest` logic for a branch.
@@ -100,23 +98,27 @@ The logic of generating the `imagePullPolicy` key:
   * In this case, the image for an appropriate docker tag doesn't need to be updated through docker pull if it already exists.
   * In this case, `imagePullPolicy` is not specified, which is consistent with the default value currently adopted in kubernetes: `imagePullPolicy=IfNotPresent`.
 
-An example of using a template in case multiple images exist in the `werf.yaml` config:
-* `tuple <image-name> . | include "werf_container_image" | indent <N-spaces>`
+> The images tagged by custom tag strategy (`--tag-custom`) processed like the images tagged by git branch tag strategy (`--tag-git-branch`)
 
-An example of using a template in case a single unnamed image exists in the config:
-* `tuple . | include "werf_container_image" | indent <N-spaces>`
-* `include "werf_container_image" . | indent <N-spaces>` (additional simplified entry format)
+An example of using the function in case multiple images exist in the `werf.yaml` config:
+* `tuple <image-name> . | werf_container_image | indent <N-spaces>`
+
+An example of using the function in case a single unnamed image exists in the config:
+* `tuple . | werf_container_image | indent <N-spaces>`
+* `werf_container_image . | indent <N-spaces>` (additional simplified entry format)
 
 ##### werf_container_env
 
 Enables streamlining the release process if the image remains unchanged. Generates a block with the `DOCKER_IMAGE_ID` environment variable for the pod container. Image id will be set to real value only if `.Values.global.werf.is_branch=true`, because in this case the image for an appropriate docker tag might have been updated through its name remained unchanged. The `DOCKER_IMAGE_ID` variable contains a new id docker for an image, which forces kubernetes to update an asset. The template may return multiple strings, which is why it must be used together with `indent`.
 
-An example of using a template in case multiple images exist in the `werf.yaml` config:
-* `tuple <image-name> . | include "werf_container_env" | indent <N-spaces>`
+> The images tagged by custom tag strategy (`--tag-custom`) processed like the images tagged by git branch tag strategy (`--tag-git-branch`)
 
-An example of using a template in case a single unnamed image exists in the config:
-* `tuple . | include "werf_container_env" | indent <N-spaces>`
-* `include "werf_container_env" . | indent <N-spaces>` (additional simplified entry format)
+An example of using the function in case multiple images exist in the `werf.yaml` config:
+* `tuple <image-name> . | werf_container_env | indent <N-spaces>`
+
+An example of using the function in case a single unnamed image exists in the config:
+* `tuple . | werf_container_env | indent <N-spaces>`
+* `werf_container_env . | indent <N-spaces>` (additional simplified entry format)
 
 ##### Examples
 
@@ -137,9 +139,9 @@ spec:
       containers:
       - name: main
         command: [ ... ]
-{{ tuple "backend" . | include "werf_container_image" | indent 8 }}
+{{ tuple "backend" . | werf_container_image | indent 8 }}
         env:
-{{ tuple "backend" . | include "werf_container_env" | indent 8 }}
+{{ tuple "backend" . | werf_container_env | indent 8 }}
 ```
 {% endraw %}
 
@@ -160,9 +162,9 @@ spec:
       containers:
       - name: main
         command: [ ... ]
-{{ include "werf_container_image" . | indent 8 }}
+{{ werf_container_image . | indent 8 }}
         env:
-{{ include "werf_container_env" . | indent 8 }}
+{{ werf_container_env . | indent 8 }}
 ```
 {% endraw %}
 
@@ -174,7 +176,9 @@ Secret files are placed in the directory `.helm/secret`. User can create arbitra
 
 ##### werf_secret_file
 
-`werf_secret_file` is template function helper for user to fetch secret file content in chart templates. This template function reads file context, which usually placed in the resource yaml manifest of such resources as Secrets. Template function requires relative path to the file inside `.helm/secret` directory as an argument.
+`werf_secret_file` is runtime template function helper for user to fetch secret file content in chart templates. 
+This template function reads file context, which usually placed in the resource yaml manifest of such resources as Secrets. 
+Template function requires relative path to the file inside `.helm/secret` directory as an argument.
 
 For example to read `.helm/secret/backend-saml/stage/tls.key` and `.helm/secret/backend-saml/stage/tls.crt` files decrypted content into templates:
 
@@ -186,8 +190,8 @@ metadata:
   name: myproject-backend-saml
 type: kubernetes.io/tls
 data:
-  tls.crt: {{ tuple "backend-saml/stage/tls.crt" . | include "werf_secret_file" | b64enc }}
-  tls.key: {{ tuple "backend-saml/stage/tls.key" . | include "werf_secret_file" | b64enc }}
+  tls.crt: {{ werf_secret_file "backend-saml/stage/tls.crt" | b64enc }}
+  tls.key: {{ werf_secret_file "backend-saml/stage/tls.key" | b64enc }}
 ```
 {% endraw %}
 
@@ -231,9 +235,9 @@ global:
       password: mysql-dev
 ```
 
-Values placed by key `global` will be available in the current chart and all [subcharts](#subcharts).
+Values placed by key `global` will be available in the current chart and all [subcharts]({{ site.baseurl }}/documentation/reference/deploy_process/working_with_chart_dependencies.html).
 
-Values placed by arbitrary key `SOMEKEY` will be available in the current chart and in the [subchart](#subcharts) with the name `SOMEKEY`.
+Values placed by arbitrary key `SOMEKEY` will be available in the current chart and in the [subchart]({{ site.baseurl }}/documentation/reference/deploy_process/working_with_chart_dependencies.html) with the name `SOMEKEY`.
 
 File `.helm/values.yaml` is the default values file. Additional user defined regular values can alternatively be passed via:
 
@@ -321,55 +325,6 @@ To access values from chart templates following syntax is used:
 {% endraw %}
 
 `.Values` object contains [merged result values](#merge-result-values) map.
-
-### Subcharts
-
-The chart can include arbitrary number of dependencies called subcharts.
-
-Subcharts are placed in the directory `.helm/charts/SUBCHART_DIR`. Each subchart in the `SUBCHART_DIR` is a chart by itself with the similar files structure (which can also have own recursive subcharts).
-
-During deploy process werf will render, create and track all resources of all subcharts of current chart.
-
-#### Subchart and values
-
-To pass values from parent chart to subchart called `mysubchart` user must define following values in the parent chart:
-
-```yaml
-mysubchart:
-  key1:
-    key2:
-    - key3: value
-```
-
-In the `mysubchart` these values should be specified without `mysubchart` key:
-
-{% raw %}
-```yaml
-{{ .Values.key1.key2[0].key3 }}
-```
-{% endraw %}
-
-Global values defined by the special toplevel values key `global` will also be available in the subcharts:
-
-```yaml
-global:
-  database:
-    mysql:
-      user: user
-      password: password
-```
-
-In the subcharts these values should be specified as always:
-
-{% raw %}
-```yaml
-{{ .Values.global.database.mysql.user }}
-```
-{% endraw %}
-
-Only values by keys `mysubchart` and `global` will be available in the subchart `mysubchart`.
-
-**NOTE** `secret-values.yaml` files from subcharts will not be used during deploy process. Although secret values from main chart and additional secret values from cli params `--secret-values` will be available in the `.Values` as usually.
 
 ## Release
 
@@ -463,16 +418,15 @@ When running `werf deploy` command werf starts deploy process which includes fol
  1. Render chart templates into single list of kubernetes resources manifests and validate them.
  2. Run `pre-install` or `pre-upgrade` [hooks](#helm-hooks) and track each of the hooks till successful or failed termination printing logs and other info along the way.
  3. Apply changes to kubernetes resources: create new, delete old, update existing.
- 4. Run `post-apply-on-install` or `post-apply-on-upgrade` [hooks](#helm-hooks) and track each of the hooks till successful or failed termination printing logs and other info along the way.
- 5. Create new release version and save current resources manifests state into this release.
- 6. Track all release resources till readiness state reached printing logs and other info along the way.
- 7. Run `post-install` or `post-upgrade` [hooks](#helm-hooks) and track each of the hooks till successful or failed termination printing logs and other info along the way.
+ 4. Create new release version and save current resources manifests state into this release.
+ 5. Track all release resources till readiness state reached printing logs and other info along the way.
+ 6. Run `post-install` or `post-upgrade` [hooks](#helm-hooks) and track each of the hooks till successful or failed termination printing logs and other info along the way.
 
 NOTE: Werf will delete all newly created resources immediately during current deploy process if this deploy process fails at any step specified above!
 
-During execution of helm hooks on the steps 2, 4 and 7 werf will track these hooks resources until successful termination. Tracking [can be configured](#resource-tracking-configuration) for each hook resource.
+During execution of helm hooks on the steps 2 and 6 werf will track these hooks resources until successful termination. Tracking [can be configured](#resource-tracking-configuration) for each hook resource.
 
-On the step 6 werf tracks all release resources until each resource reaches "ready" state. All resources are tracked at the same time. During tracking werf unifies info from all release resources in realtime into single text output and periodically prints so called status progress table. Tracking [can be configured](#resource-tracking-configuration) for each resource.
+On the step 5 werf tracks all release resources until each resource reaches "ready" state. All resources are tracked at the same time. During tracking werf unifies info from all release resources in realtime into single text output and periodically prints so called status progress table. Tracking [can be configured](#resource-tracking-configuration) for each resource.
 
 Werf shows logs of resources Pods only until pod reaches "ready" state, except for Jobs. For Pods of a Job logs will be shown till Pods are terminated.
 
@@ -506,10 +460,6 @@ metadata:
 There are a lot of different helm hooks which come into play during deploy process. We have already seen `pre|post-install|upgade` hooks in the [deploy process](#deploy-process), which are the most usually needed hooks to run such tasks as migrations (in `pre-uprade` hooks) or some post deploy actions. The full list of available hooks can be found in the [helm docs](https://github.com/helm/helm/blob/master/docs/charts_hooks.md#the-available-hooks).
 
 Hooks are sorted in the ascending order specified by `helm.sh/hook-weight` annotation (hooks with the same weight are sorted by the names), then created and executed sequentially. Werf recreates kuberntes resource for each of the hook in the case when resource already exists in the cluster. Hooks kubernetes resources are not deleted after execution.
-
-#### Extra werf hooks
-
-There are two extra hooks added in werf, `post-apply-on-install` and `post-apply-on-upgrade`. The hooks are launched after applying main application resources and before tracking ones (read more in the [deploy process](#deploy-process)).
 
 ### Resource tracking configuration
 
@@ -609,7 +559,11 @@ Werf automatically sets following builtin annotations to all chart resources dep
  * `"werf.io/version": FULL_WERF_VERSION` — werf version that being used when running `werf deploy` command;
  * `"project.werf.io/name": PROJECT_NAME` — project name specified in the `werf.yaml`.
 
-Werf also sets auto annotation `"project.werf.io/gitlab-url": $CI_PROJECT_URL` for gitlab CI when using `werf ci-env` command prior to run `werf deploy` command.
+Werf also sets auto annotations for GitLab CI when using `werf ci-env` command prior to run `werf deploy` command. Currently the following annotations supported:
+* `"project.werf.io/git": $CI_PROJECT_URL`;
+* `"ci.werf.io/commit": $CI_COMMIT_SHA`;
+* `"gitlab.ci.werf.io/pipeline-url":  $CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID`;
+* `"gitlab.ci.werf.io/job-url": $CI_PROJECT_URL/pipelines/$CI_JOB_ID`.
 
 #### Custom annotations and labels
 

@@ -29,10 +29,6 @@ In contrast to Tiller, releases storage in Werf is not a static configuration of
 
 As helm client and tiller is built into werf there is no need for helm client installed on the host nor tiller installed in the cluster.
 
-### Hooks differences
-
-Added two extra hooks: `post-apply-on-install` and `post-apply-on-upgrade`. The hooks are launched after applying main application resources and before tracking ones. 
-
 ## Proper tracking of deployed resources
 
 Werf tracks all chart resources until each resource reaches ready state and prints logs and info about current resources status, resources status changes during deploy process and "what werf is waiting for?".
@@ -47,7 +43,11 @@ Werf uses [kubedog resource tracking library](https://github.com/flant/kubedog) 
 
 ## Annotate and label chart resources
 
-Werf automatically appends annotations, such as `"werf.io/version": VERSION`, `"project.werf.io/name": PROJECT_NAME`, `"project.werf.io/gitlab-url": $CI_PROJECT_URL` to all resources from chart (including hooks).
+Werf automatically appends annotations to all chart resources (including hooks), such as (for GitLab):
+* `"project.werf.io/git": $CI_PROJECT_URL`;
+* `"ci.werf.io/commit": $CI_COMMIT_SHA`;
+* `"gitlab.ci.werf.io/pipeline-url":  $CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID`;
+* `"gitlab.ci.werf.io/job-url": $CI_PROJECT_URL/pipelines/$CI_JOB_ID`.
 
 User can pass any additional annotations and labels to werf deploy invocation and werf will set these annotations to all resources of the chart.
 
@@ -81,7 +81,7 @@ During werf deploy a temporary helm chart is created.
 
 This chart contains:
 
-* Additional generated go-templates: `werf_container_image`, `werf_container_env` and other. These templates are described in [the templates article]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#templates).
+* Additional runtime go-templates functions: `werf_container_image`, `werf_container_env` and other. These functions are described in [the templates article]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#templates).
 * Decoded secret values yaml file. The secrets are described in [the secrets article]({{ site.baseurl }}/documentation/reference/deploy_process/working_with_secrets.html#secret-values-encryption).
 
 The temporary chart then goes to the helm subsystem inside werf. Werf deletes this chart on the werf deploy command termination.

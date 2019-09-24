@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Masterminds/semver"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 
@@ -154,11 +155,33 @@ func generateGitlabEnvs() error {
 	printHeader("DEPLOY", true)
 	printExportCommand("WERF_ENV", os.Getenv("CI_ENVIRONMENT_SLUG"), false)
 
-	var gitRepositoryUrl string
-	if os.Getenv("CI_PROJECT_URL") != "" {
-		gitRepositoryUrl = fmt.Sprintf("project.werf.io/gitlab-url=%s", os.Getenv("CI_PROJECT_URL"))
+	var projectGit string
+	ciProjectUrlEnv := os.Getenv("CI_PROJECT_URL")
+	if ciProjectUrlEnv != "" {
+		projectGit = fmt.Sprintf("project.werf.io/git=%s", ciProjectUrlEnv)
 	}
-	printExportCommand("WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL", gitRepositoryUrl, false)
+	printExportCommand("WERF_ADD_ANNOTATION_PROJECT_GIT", projectGit, false)
+
+	var ciCommit string
+	ciCommitShaEnv := os.Getenv("CI_COMMIT_SHA")
+	if ciCommitShaEnv != "" {
+		ciCommit = fmt.Sprintf("ci.werf.io/commit=%s", ciCommitShaEnv)
+	}
+	printExportCommand("WERF_ADD_ANNOTATION_CI_COMMIT", ciCommit, false)
+
+	var gitlabCIPipelineUrl string
+	ciPipelineIdEnv := os.Getenv("CI_PIPELINE_ID")
+	if ciProjectUrlEnv != "" && ciPipelineIdEnv != "" {
+		gitlabCIPipelineUrl = fmt.Sprintf("gitlab.ci.werf.io/pipeline-url=%s/pipelines/%s", ciProjectUrlEnv, ciPipelineIdEnv)
+	}
+	printExportCommand("WERF_ADD_ANNOTATION_GITLAB_CI_PIPELINE_URL", gitlabCIPipelineUrl, false)
+
+	var gitlabCiJobUrl string
+	ciJobIdEnv := os.Getenv("CI_JOB_ID")
+	if ciProjectUrlEnv != "" && os.Getenv("CI_JOB_ID") != "" {
+		gitlabCiJobUrl = fmt.Sprintf("gitlab.ci.werf.io/job-url=%s/-/jobs/%s", ciProjectUrlEnv, ciJobIdEnv)
+	}
+	printExportCommand("WERF_ADD_ANNOTATION_GITLAB_CI_JOB_URL", gitlabCiJobUrl, false)
 
 	cleanupConfig, err := getCleanupConfig()
 	if err != nil {
@@ -172,10 +195,25 @@ func generateGitlabEnvs() error {
 	printExportCommand("WERF_GIT_COMMIT_STRATEGY_EXPIRY_DAYS", fmt.Sprintf("%d", cleanupConfig.GitCommitStrategyExpiryDays), false)
 
 	printHeader("OTHER", true)
-	printExportCommand("WERF_LOG_COLOR_MODE", "on", false)
+
+	werfLogColorMode := "on"
+	ciServerVersion := os.Getenv("CI_SERVER_VERSION")
+	if ciServerVersion != "" {
+		currentVersion, err := semver.NewVersion(ciServerVersion)
+		if err == nil {
+			colorWorkTillVersion, _ := semver.NewVersion("12.1.3")
+			colorWorkSinceVersion, _ := semver.NewVersion("12.2.0")
+
+			if currentVersion.GreaterThan(colorWorkTillVersion) && currentVersion.LessThan(colorWorkSinceVersion) {
+				werfLogColorMode = "off"
+			}
+		}
+	}
+
+	printExportCommand("WERF_LOG_COLOR_MODE", werfLogColorMode, false)
 	printExportCommand("WERF_LOG_PROJECT_DIR", "1", false)
 	printExportCommand("WERF_ENABLE_PROCESS_EXTERMINATOR", "1", false)
-	printExportCommand("WERF_LOG_TERMINAL_WIDTH", "100", false)
+	printExportCommand("WERF_LOG_TERMINAL_WIDTH", "95", false)
 
 	if ciGitTag == "" && ciGitBranch == "" {
 		return fmt.Errorf("none of enviroment variables $WERF_TAG_GIT_TAG=$CI_COMMIT_TAG or $WERF_TAG_GIT_BRANCH=$CI_COMMIT_REF_NAME for '%s' strategy are detected", CmdData.TaggingStrategy)

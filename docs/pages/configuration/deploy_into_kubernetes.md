@@ -23,6 +23,16 @@ deploy:
 
 `deploy.helmReleaseSlug` defines whether to apply or not [slug]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#release-name-slug) to generated helm release name. Default: `true`.
 
+`TEMPLATE` as well as any value of the config can include [Werf Go templates functions]({{ site.baseurl }}/documentation/configuration/introduction.html#go-templates-1). E.g. you can mix the value with an environment variable:
+
+{% raw %}
+```yaml
+deploy:
+  helmRelease: >-
+    [[ project ]]-{{ env "HELM_RELEASE_EXTRA" }}-[[ env ]]
+```
+{% endraw %}
+
 ## Kubernetes namespace
 
 Werf allows to define a custom kubernetes namespace template, which [used during deploy process]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#kubernetes-namespace) to generate a Kubernetes Namespace.

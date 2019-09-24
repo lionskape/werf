@@ -69,6 +69,8 @@ The configuration of the _git mapping_ supports filtering files, and you can use
 
 Werf has support for submodules. Werf detects if files specified with _git mapping_ configuration are contained in submodules and does the very best it could to handle the changes of files in submodules correctly.
 
+> All project's submodules locked to a specific commit, so all collaborators receive the same content. Therefore, Werf **does not initialize, update submodules** and just uses these commits
+
 An example of a _git mapping_ configuration for adding source files from a local repository from the `/src` into the `/app` directory, and remote phantomjs source files to `/src/phantomjs`:
 
 ```yaml
@@ -324,7 +326,7 @@ For example, login and password from GitLab CI variables:
 {% raw %}
 ```yaml
 git:
-- add: https://{{ env "CI_REGISTRY_USER" }}:{{ env "CI_JOB_TOKEN" }}@registry.gitlab.company.name/common/helper-utils.git
+- url: https://{{ env "CI_REGISTRY_USER" }}:{{ env "CI_JOB_TOKEN" }}@registry.gitlab.company.name/common/helper-utils.git
 ```
 {% endraw %}
 
@@ -336,7 +338,7 @@ Werf supports access to the repository via the git protocol. Access via this pro
 
 ```yaml
 git:
-- add: git@gitlab.company.name:project_group/project.git
+- url: git@gitlab.company.name:project_group/project.git
 ```
 
 To successfully work with remote repositories via ssh, you should understand how werf searches for access keys.

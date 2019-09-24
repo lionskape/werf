@@ -52,7 +52,7 @@ Werf ci-env command automatically detects CI/CD web page project url and embeds 
 
 Annotation name depends on the selected CI/CD system and constructed as follows: `"project.werf.io/CI_CD_SYSTEM_NAME-url": URL`.
 
-[`WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL="project.werf.io/CI_CD_SYSTEM_NAME-url": URL`](#werf_add_annotation_git_repository_url) will be set.
+[`WERF_ADD_ANNOTATION_PROJECT_GIT="project.werf.io/git": URL`](#werf_add_annotation_project_git) will be set.
 
 There are another *auto annotations* set by werf using any CI/CD system, also *custom annotations and labels* can be passed, see [deploy article for details]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html#annotate-and-label-chart-resources).
 
@@ -98,6 +98,13 @@ This mode makes use of [werf publish params]({{ site.baseurl }}/documentation/re
 
 This tagging mode is selected by `--tagging-strategy=tag-or-branch` option of [`werf ci-env` command]({{ site.baseurl }}/documentation/cli/toolbox/ci_env.html).
 
+> If used tag or branch value does not match regex `^[\w][\w.-]*$` or consists of more than 128 characters, werf slugifies this tag (read more in [slug reference]({{ site.baseurl }}/documentation/reference/toolbox/slug.html)). 
+  <br />
+  <br />
+  For example: 
+  - branch `developer-feature` is valid and resulted tag will be unchanged;
+  - branch `developer/feature` is not valid and resulted tag will be `developer-feature-6e0628fc`.
+
 ## How ci-env works
 
 Ci-env command passes all paramters to werf using environment variables, see [pass cli params as environment variables below](#pass-cli-params-as-environment-variables).
@@ -138,8 +145,14 @@ echo
 echo '### DEPLOY'
 export WERF_ENV="dev"
 echo 'export WERF_ENV="dev"'
-export WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL="project.werf.io/gitlab-url=https://gitlab.domain.com/project/x"
-echo 'export WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL="project.werf.io/gitlab-url=https://gitlab.domain.com/project/x"'
+export WERF_ADD_ANNOTATION_PROJECT_GIT="project.werf.io/git=https://gitlab.domain.com/project/x"
+echo 'export WERF_ADD_ANNOTATION_PROJECT_GIT="project.werf.io/git=https://gitlab.domain.com/project/x"'
+export WERF_ADD_ANNOTATION_CI_COMMIT="ci.werf.io/commit=b9a1ddd366aa6a20a0fd43fb6612f349d33465ff"
+echo 'export WERF_ADD_ANNOTATION_CI_COMMIT="ci.werf.io/commit=b9a1ddd366aa6a20a0fd43fb6612f349d33465ff"'
+export WERF_ADD_ANNOTATION_GITLAB_CI_PIPELINE_URL="gitlab.ci.werf.io/pipeline-url=https://gitlab.domain.com/project/x/pipelines/43107"
+echo 'export WERF_ADD_ANNOTATION_GITLAB_CI_PIPELINE_URL="gitlab.ci.werf.io/pipeline-url=https://gitlab.domain.com/project/x/pipelines/43107"'
+export WERF_ADD_ANNOTATION_GITLAB_CI_JOB_URL="gitlab.ci.werf.io/job-url=https://gitlab.domain.com/project/x/-/jobs/110681"
+echo 'export WERF_ADD_ANNOTATION_GITLAB_CI_JOB_URL="gitlab.ci.werf.io/job-url=https://gitlab.domain.com/project/x/-/jobs/110681"'
 
 ### IMAGE CLEANUP POLICIES
 echo
@@ -158,8 +171,8 @@ export WERF_LOG_PROJECT_DIR="1"
 echo 'export WERF_LOG_PROJECT_DIR="1"'
 export WERF_ENABLE_PROCESS_EXTERMINATOR="1"
 echo 'export WERF_ENABLE_PROCESS_EXTERMINATOR="1"'
-export WERF_LOG_TERMINAL_WIDTH="100"
-echo 'export WERF_LOG_TERMINAL_WIDTH="100"'
+export WERF_LOG_TERMINAL_WIDTH="95"
+echo 'export WERF_LOG_TERMINAL_WIDTH="95"'
 ```
 
 ### Pass CLI params as environment variables
@@ -226,9 +239,13 @@ Within [git integration](#git-integration) procedure [`werf ci-env` command]({{ 
 
 Within [CI/CD configuration integration](#ci-cd-configuration-integration) procedure [`werf ci-env` command]({{ site.baseurl }}/documentation/cli/toolbox/ci_env.html) will detect environment name and define `--env` param using `WERF_ENV` environment variable.
 
-#### WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL
+#### WERF_ADD_ANNOTATION_PROJECT_GIT
 
-Within [CI/CD pipelines integration](#ci-cd-pipelines-integration) procedure [`werf ci-env` command]({{ site.baseurl }}/documentation/cli/toolbox/ci_env.html) will detect web page project url and set `--add-annotation` param using `WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL` environment variable.
+Within [CI/CD pipelines integration](#ci-cd-pipelines-integration) procedure [`werf ci-env` command]({{ site.baseurl }}/documentation/cli/toolbox/ci_env.html) will detect web page project url and set `--add-annotation` param using `WERF_ADD_ANNOTATION_PROJECT_GIT` environment variable.
+
+#### WERF_ADD_ANNOTATION_CI_COMMIT
+
+Within [CI/CD pipelines integration](#ci-cd-pipelines-integration) procedure [`werf ci-env` command]({{ site.baseurl }}/documentation/cli/toolbox/ci_env.html) will detect current commit and set `--add-annotation` param using `WERF_ADD_ANNOTATION_CI_COMMIT` environment variable.
 
 #### WERF_GIT_TAG_STRATEGY_LIMIT
 

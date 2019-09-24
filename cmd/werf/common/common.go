@@ -272,15 +272,15 @@ func SetupImagesRepoMode(cmdData *CmdData, cmd *cobra.Command) {
 
 	defaultValue := os.Getenv("WERF_IMAGES_REPO_MODE")
 	if defaultValue == "" {
-		defaultValue = MultirepImagesRepoMode
+		defaultValue = MultirepoImagesRepoMode
 	}
 
-	cmd.Flags().StringVarP(cmdData.ImagesRepoMode, "images-repo-mode", "", defaultValue, fmt.Sprintf(`Define how to store images in Repo: %[1]s or %[2]s (defaults to $WERF_IMAGES_REPO_MODE or %[1]s)`, MultirepImagesRepoMode, MonorepImagesRepoMode))
+	cmd.Flags().StringVarP(cmdData.ImagesRepoMode, "images-repo-mode", "", defaultValue, fmt.Sprintf(`Define how to store images in Repo: %[1]s or %[2]s (defaults to $WERF_IMAGES_REPO_MODE or %[1]s)`, MultirepoImagesRepoMode, MonorepoImagesRepoMode))
 }
 
 func SetupInsecureRepo(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.InsecureRepo = new(bool)
-	cmd.Flags().BoolVarP(cmdData.InsecureRepo, "insecure-repo", "", getBoolEnvironment("WERF_INSECURE_REPO"), "Allow usage of insecure docker repos (default $WERF_INSECURE_REPO)")
+	cmd.Flags().BoolVarP(cmdData.InsecureRepo, "insecure-repo", "", GetBoolEnvironment("WERF_INSECURE_REPO"), "Allow usage of insecure docker repos (default $WERF_INSECURE_REPO)")
 }
 
 func SetupDryRun(cmdData *CmdData, cmd *cobra.Command) {
@@ -332,7 +332,7 @@ func SetupLogPretty(cmdData *CmdData, cmd *cobra.Command) {
 
 	var defaultValue bool
 	if os.Getenv("WERF_LOG_PRETTY") != "" {
-		defaultValue = getBoolEnvironment("WERF_LOG_PRETTY")
+		defaultValue = GetBoolEnvironment("WERF_LOG_PRETTY")
 	} else {
 		defaultValue = true
 	}
@@ -370,12 +370,12 @@ func SetupSecretValues(cmdData *CmdData, cmd *cobra.Command) {
 
 func SetupIgnoreSecretKey(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.IgnoreSecretKey = new(bool)
-	cmd.Flags().BoolVarP(cmdData.IgnoreSecretKey, "ignore-secret-key", "", getBoolEnvironment("WERF_IGNORE_SECRET_KEY"), "Disable secrets decryption (default $WERF_IGNORE_SECRET_KEY)")
+	cmd.Flags().BoolVarP(cmdData.IgnoreSecretKey, "ignore-secret-key", "", GetBoolEnvironment("WERF_IGNORE_SECRET_KEY"), "Disable secrets decryption (default $WERF_IGNORE_SECRET_KEY)")
 }
 
 func SetupLogProjectDir(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.LogProjectDir = new(bool)
-	cmd.Flags().BoolVarP(cmdData.LogProjectDir, "log-project-dir", "", getBoolEnvironment("WERF_LOG_PROJECT_DIR"), `Print current project directory path (default $WERF_LOG_PROJECT_DIR)`)
+	cmd.Flags().BoolVarP(cmdData.LogProjectDir, "log-project-dir", "", GetBoolEnvironment("WERF_LOG_PROJECT_DIR"), `Print current project directory path (default $WERF_LOG_PROJECT_DIR)`)
 }
 
 func SetupIntrospectStage(cmdData *CmdData, cmd *cobra.Command) {
@@ -399,7 +399,7 @@ func allStagesNames() []string {
 	return stageNames
 }
 
-func getBoolEnvironment(environmentName string) bool {
+func GetBoolEnvironment(environmentName string) bool {
 	switch os.Getenv(environmentName) {
 	case "1", "true", "yes":
 		return true
@@ -545,10 +545,10 @@ func GetImagesRepo(projectName string, cmdData *CmdData) (string, error) {
 
 func GetImagesRepoMode(cmdData *CmdData) (string, error) {
 	switch *cmdData.ImagesRepoMode {
-	case MultirepImagesRepoMode, MonorepImagesRepoMode:
+	case MultirepoImagesRepoMode, MonorepoImagesRepoMode:
 		return *cmdData.ImagesRepoMode, nil
 	default:
-		return "", fmt.Errorf("bad --images-repo-mode '%s': only %s or %s supported", *cmdData.ImagesRepoMode, MultirepImagesRepoMode, MonorepImagesRepoMode)
+		return "", fmt.Errorf("bad --images-repo-mode '%s': only %s or %s supported", *cmdData.ImagesRepoMode, MultirepoImagesRepoMode, MonorepoImagesRepoMode)
 	}
 }
 
@@ -570,16 +570,25 @@ func GetOptionalImagesRepo(projectName string, cmdData *CmdData) (string, error)
 }
 
 func GetWerfConfig(projectDir string) (*config.WerfConfig, error) {
+	werfConfigPath, err := GetWerfConfigPath(projectDir)
+	if err != nil {
+		return nil, err
+	}
+
+	return config.GetWerfConfig(werfConfigPath, true)
+}
+
+func GetWerfConfigPath(projectDir string) (string, error) {
 	for _, werfConfigName := range []string{"werf.yml", "werf.yaml"} {
 		werfConfigPath := path.Join(projectDir, werfConfigName)
 		if exist, err := util.FileExists(werfConfigPath); err != nil {
-			return nil, err
+			return "", err
 		} else if exist {
-			return config.GetWerfConfig(werfConfigPath)
+			return werfConfigPath, err
 		}
 	}
 
-	return nil, errors.New("werf.yaml not found")
+	return "", errors.New("werf.yaml not found")
 }
 
 func GetProjectDir(cmdData *CmdData) (string, error) {

@@ -3,9 +3,13 @@ package helm
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"strings"
+	"text/template"
 
 	"gopkg.in/yaml.v2"
+
+	"github.com/Masterminds/sprig"
 
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/engine"
@@ -242,14 +246,228 @@ func (e *WerfEngine) Render(chrt *chart.Chart, values chartutil.Values) (map[str
 }
 
 func NewWerfEngine() *WerfEngine {
+	defaultEngine := engine.New()
+	for _, name := range []string{"env", "expandenv"} {
+		defaultEngine.FuncMap[name] = sprig.TxtFuncMap()[name]
+	}
+
 	return &WerfEngine{
-		Engine:           engine.New(),
+		Engine:           defaultEngine,
 		ExtraAnnotations: map[string]string{},
 		ExtraLabels:      map[string]string{},
 	}
 }
 
-func WithExtra(extraAnnotations, extraLabels map[string]string, f func() error) error {
+func (e *WerfEngine) InitWerfEngineExtraTemplatesFunctions(decodedSecretFiles map[string]string) {
+	e.AlterFuncMapHookFunc = func(t *template.Template, funcMap template.FuncMap) template.FuncMap {
+		if _, err := t.Funcs(funcMap).Parse(werfEngineHelpers); err != nil {
+			panic(fmt.Errorf("parse werf engine helpers failed: %s", err))
+		}
+
+		werfSecretFileFunc := func(secretRelativePath string) (string, error) {
+			if filepath.IsAbs(secretRelativePath) {
+				return "", fmt.Errorf("expected relative secret file path, given path %v", secretRelativePath)
+			}
+
+			decodedData, ok := decodedSecretFiles[secretRelativePath]
+
+			if !ok {
+				var secretFiles []string
+				for key := range decodedSecretFiles {
+					secretFiles = append(secretFiles, key)
+				}
+
+				return "", fmt.Errorf("secret file '%s' not found, you should use one of the following: '%s'", secretRelativePath, strings.Join(secretFiles, "', '"))
+			}
+
+			return decodedData, nil
+		}
+
+		funcMap["werf_secret_file"] = werfSecretFileFunc
+
+		helmIncludeFunc := funcMap["include"].(func(name string, data interface{}) (string, error))
+		werfIncludeFunc := func(name string, data interface{}) (string, error) {
+			// legacy
+			if name == "werf_secret_file" {
+				var arg interface{}
+
+				switch v := data.(type) {
+				case []interface{}:
+					if len(v) == 1 || len(v) == 2 {
+						arg = v[0]
+					} else {
+						return "", fmt.Errorf("expected relative secret file path, given %v", v)
+					}
+				case interface{}:
+					arg = v
+				}
+
+				argTyped, ok := arg.(string)
+				if !ok {
+					return "", fmt.Errorf("expected relative secret file path, given %v", arg)
+				}
+
+				if strings.HasPrefix(argTyped, "/") {
+					legacyArgTyped := strings.TrimPrefix(argTyped, "/")
+					if res, err := werfSecretFileFunc(legacyArgTyped); err == nil {
+						return res, nil
+					}
+				}
+
+				return werfSecretFileFunc(argTyped)
+			}
+
+			return helmIncludeFunc(name, data)
+		}
+
+		funcMap["include"] = werfIncludeFunc
+
+		for _, name := range []string{
+			"image",
+			"image_id",
+			"werf_container_image",
+			"werf_container_env",
+		} {
+			boundedName := name
+			funcMap[name] = func(data interface{}) (string, error) {
+				return werfIncludeFunc(boundedName, data)
+			}
+		}
+
+		return funcMap
+	}
+}
+
+var werfEngineHelpers = `{{- define "_image" -}}
+{{-   $context := index . 0 -}}
+{{-   if not $context.Values.global.werf.is_nameless_image -}}
+{{-     required "No image specified for template" nil -}}
+{{-   end -}}
+{{    $context.Values.global.werf.image.docker_image }}
+{{- end -}}
+
+{{- define "_image2" -}}
+{{-   $name := index . 0 -}}
+{{-   $context := index . 1 -}}
+{{-   if $context.Values.global.werf.is_nameless_image -}}
+{{-     required (printf "No image should be specified for template, got '%s'" $name) nil -}}
+{{-   end -}}
+{{    index (required (printf "Unknown image '%s' specified for template" $name) (pluck $name $context.Values.global.werf.image | first)) "docker_image" }}
+{{- end -}}
+
+{{- define "image" -}}
+{{-   if eq (typeOf .) "chartutil.Values" -}}
+{{-     $context := . -}}
+{{      tuple $context | include "_image" }}
+{{-   else if (ge (len .) 2) -}}
+{{-     $name := index . 0 -}}
+{{-     $context := index . 1 -}}
+{{      tuple $name $context | include "_image2" }}
+{{-   else -}}
+{{-     $context := index . 0 -}}
+{{      tuple $context | include "_image" }}
+{{-   end -}}
+{{- end -}}
+
+{{- define "_werf_container__imagePullPolicy" -}}
+{{-   $context := index . 0 -}}
+{{-   if or $context.Values.global.werf.ci.is_branch $context.Values.global.werf.ci.is_custom -}}
+imagePullPolicy: Always
+{{-   end -}}
+{{- end -}}
+
+{{- define "_werf_container__image" -}}
+{{-   $context := index . 0 -}}
+image: {{ tuple $context | include "_image" }}
+{{- end -}}
+
+{{- define "_werf_container__image2" -}}
+{{-   $name := index . 0 -}}
+{{-   $context := index . 1 -}}
+image: {{ tuple $name $context | include "_image2" }}
+{{- end -}}
+
+{{- define "werf_container_image" -}}
+{{-   if eq (typeOf .) "chartutil.Values" -}}
+{{-     $context := . -}}
+{{      tuple $context | include "_werf_container__image" }}
+{{      tuple $context | include "_werf_container__imagePullPolicy" }}
+{{-   else if (ge (len .) 2) -}}
+{{-     $name := index . 0 -}}
+{{-     $context := index . 1 -}}
+{{      tuple $name $context | include "_werf_container__image2" }}
+{{      tuple $context | include "_werf_container__imagePullPolicy" }}
+{{-   else -}}
+{{-     $context := index . 0 -}}
+{{      tuple $context | include "_werf_container__image" }}
+{{      tuple $context | include "_werf_container__imagePullPolicy" }}
+{{-   end -}}
+{{- end -}}
+
+{{- define "_image_id" -}}
+{{-   $context := index . 0 -}}
+{{-   if not $context.Values.global.werf.is_nameless_image -}}
+{{-     required "No image specified for template" nil -}}
+{{-   end -}}
+{{    $context.Values.global.werf.image.docker_image_id }}
+{{- end -}}
+
+{{- define "_image_id2" -}}
+{{-   $name := index . 0 -}}
+{{-   $context := index . 1 -}}
+{{-   if $context.Values.global.werf.is_nameless_image -}}
+{{-     required (printf "No image should be specified for template, got '%s'" $name) nil -}}
+{{-   end -}}
+{{    index (required (printf "Unknown image '%s' specified for template" $name) (pluck $name $context.Values.global.werf.image | first)) "docker_image_id" }}
+{{- end -}}
+
+{{- define "image_id" -}}
+{{-   if eq (typeOf .) "chartutil.Values" -}}
+{{-     $context := . -}}
+{{      tuple $context | include "_image_id" }}
+{{-   else if (ge (len .) 2) -}}
+{{-     $name := index . 0 -}}
+{{-     $context := index . 1 -}}
+{{      tuple $name $context | include "_image_id2" }}
+{{-   else -}}
+{{-     $context := index . 0 -}}
+{{      tuple $context | include "_image_id" }}
+{{-   end -}}
+{{- end -}}
+
+{{- define "_werf_container_env" -}}
+{{-   $context := index . 0 -}}
+{{-   if or $context.Values.global.werf.ci.is_branch $context.Values.global.werf.ci.is_custom -}}
+- name: DOCKER_IMAGE_ID
+  value: {{ tuple $context | include "_image_id" }}
+{{-   end -}}
+{{- end -}}
+
+{{- define "_werf_container_env2" -}}
+{{-   $name := index . 0 -}}
+{{-   $context := index . 1 -}}
+{{-   if or $context.Values.global.werf.ci.is_branch $context.Values.global.werf.ci.is_custom -}}
+- name: DOCKER_IMAGE_ID
+  value: {{ tuple $name $context | include "_image_id2" }}
+{{-   end -}}
+{{- end -}}
+
+{{- define "werf_container_env" -}}
+{{-   if eq (typeOf .) "chartutil.Values" -}}
+{{-     $context := . -}}
+{{      tuple $context | include "_werf_container_env" }}
+{{-   else if (ge (len .) 2) -}}
+{{-     $name := index . 0 -}}
+{{-     $context := index . 1 -}}
+{{      tuple $name $context | include "_werf_container_env2" }}
+{{-   else -}}
+{{-     $context := index . 0 -}}
+{{      tuple $context | include "_werf_container_env" }}
+{{-   end -}}
+{{- end -}}
+`
+
+func WerfTemplateEngineWithExtraAnnotationsAndLabels(extraAnnotations, extraLabels map[string]string, f func() error) error {
 	WerfTemplateEngine.ExtraAnnotations = extraAnnotations
 	WerfTemplateEngine.ExtraLabels = extraLabels
 	err := f()

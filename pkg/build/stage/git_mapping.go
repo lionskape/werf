@@ -2,6 +2,7 @@ package stage
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,15 +10,41 @@ import (
 
 	"github.com/flant/logboek"
 	"github.com/flant/werf/pkg/stapel"
+	"github.com/flant/werf/pkg/util"
 
 	"github.com/flant/werf/pkg/git_repo"
 	"github.com/flant/werf/pkg/image"
 )
 
+type GitRepoCache struct {
+	Patches   map[string]git_repo.Patch
+	Checksums map[string]git_repo.Checksum
+	Archives  map[string]git_repo.Archive
+}
+
+func objectToHashKey(obj interface{}) string {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		panic(fmt.Sprintf("unable to marshal object %#v: %s", obj, err))
+	}
+	return util.Sha256Hash(string(data))
+}
+
+func (cache *GitRepoCache) Terminate() error {
+	for _, patch := range cache.Patches {
+		os.RemoveAll(patch.GetFilePath())
+	}
+	for _, archive := range cache.Archives {
+		os.RemoveAll(archive.GetFilePath())
+	}
+	return nil
+}
+
 type GitMapping struct {
 	GitRepoInterface git_repo.GitRepo
 	LocalGitRepo     *git_repo.Local
 	RemoteGitRepo    *git_repo.Remote
+	GitRepoCache     *GitRepoCache
 
 	Name               string
 	As                 string
@@ -70,6 +97,28 @@ func (gp *GitMapping) GitRepo() git_repo.GitRepo {
 	panic("GitRepo not initialized")
 }
 
+func (gp *GitMapping) getOrCreateChecksum(opts git_repo.ChecksumOptions) (git_repo.Checksum, error) {
+	if _, hasKey := gp.GitRepoCache.Checksums[objectToHashKey(opts)]; !hasKey {
+		checksum, err := gp.GitRepo().Checksum(opts)
+		if err != nil {
+			return nil, err
+		}
+		gp.GitRepoCache.Checksums[objectToHashKey(opts)] = checksum
+	}
+	return gp.GitRepoCache.Checksums[objectToHashKey(opts)], nil
+}
+
+func (gp *GitMapping) getOrCreateArchive(opts git_repo.ArchiveOptions) (git_repo.Archive, error) {
+	if _, hasKey := gp.GitRepoCache.Archives[objectToHashKey(opts)]; !hasKey {
+		archive, err := gp.createArchive(opts)
+		if err != nil {
+			return nil, err
+		}
+		gp.GitRepoCache.Archives[objectToHashKey(opts)] = archive
+	}
+	return gp.GitRepoCache.Archives[objectToHashKey(opts)], nil
+}
+
 func (gp *GitMapping) createArchive(opts git_repo.ArchiveOptions) (git_repo.Archive, error) {
 	var res git_repo.Archive
 
@@ -96,6 +145,17 @@ func (gp *GitMapping) createArchive(opts git_repo.ArchiveOptions) (git_repo.Arch
 	return res, nil
 }
 
+func (gp *GitMapping) getOrCreatePatch(opts git_repo.PatchOptions) (git_repo.Patch, error) {
+	if _, hasKey := gp.GitRepoCache.Patches[objectToHashKey(opts)]; !hasKey {
+		patch, err := gp.createPatch(opts)
+		if err != nil {
+			return nil, err
+		}
+		gp.GitRepoCache.Patches[objectToHashKey(opts)] = patch
+	}
+	return gp.GitRepoCache.Patches[objectToHashKey(opts)], nil
+}
+
 func (gp *GitMapping) createPatch(opts git_repo.PatchOptions) (git_repo.Patch, error) {
 	var res git_repo.Patch
 
@@ -105,7 +165,7 @@ func (gp *GitMapping) createPatch(opts git_repo.PatchOptions) (git_repo.Patch, e
 	}
 
 	logProcessMsg := fmt.Sprintf("Creating patch %s..%s for %s git mapping %s", opts.FromCommit, opts.ToCommit, gp.GitRepo().GetName(), cwd)
-	err := logboek.LogProcessInline(logProcessMsg, logboek.LogProcessInlineOptions{}, func() error {
+	err := logboek.LogProcess(logProcessMsg, logboek.LogProcessOptions{}, func() error {
 		patch, err := gp.GitRepo().CreatePatch(opts)
 		if err != nil {
 			return err
@@ -254,20 +314,17 @@ func (gp *GitMapping) baseApplyPatchCommand(fromCommit, toCommit string, prevBui
 		ToCommit:      toCommit,
 	}
 
-	patch, err := gp.createPatch(patchOpts)
+	patch, err := gp.getOrCreatePatch(patchOpts)
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(patch.GetFilePath())
 
 	if patch.IsEmpty() {
 		return nil, nil
 	}
 
 	if patch.HasBinary() {
-		patchPaths := patch.GetPaths()
-
-		pathsListFile, err := gp.createPatchPathsListFile(patchPaths, fromCommit, toCommit)
+		pathsListFile, err := gp.preparePatchPathsListFile(patchOpts, patch)
 		if err != nil {
 			return nil, fmt.Errorf("cannot create patch paths list file: %s", err)
 		}
@@ -292,19 +349,18 @@ func (gp *GitMapping) baseApplyPatchCommand(fromCommit, toCommit string, prevBui
 			Commit:        toCommit,
 		}
 
-		archive, err := gp.createArchive(archiveOpts)
+		archive, err := gp.getOrCreateArchive(archiveOpts)
 		if err != nil {
 			return nil, err
 		}
-		defer os.RemoveAll(archive.GetFilePath())
 
 		if archive.IsEmpty() {
 			return commands, nil
 		}
 
-		archiveFile, err := gp.createArchiveFile(archive, toCommit)
+		archiveFile, err := gp.prepareArchiveFile(archiveOpts, archive)
 		if err != nil {
-			return nil, fmt.Errorf("cannot create archive file: %s", err)
+			return nil, fmt.Errorf("cannot prepare archive file: %s", err)
 		}
 
 		archiveType := archive.GetType()
@@ -318,9 +374,9 @@ func (gp *GitMapping) baseApplyPatchCommand(fromCommit, toCommit string, prevBui
 		return commands, nil
 	}
 
-	patchFile, err := gp.createPatchFile(patch, fromCommit, toCommit)
+	patchFile, err := gp.preparePatchFile(patchOpts, patch)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create patch file: %s", err)
+		return nil, fmt.Errorf("cannot prepare patch file: %s", err)
 	}
 
 	return gp.applyPatchCommand(patchFile, archiveType)
@@ -382,19 +438,19 @@ func (gp *GitMapping) baseApplyArchiveCommand(commit string, image image.ImageIn
 		FilterOptions: gp.getRepoFilterOptions(),
 		Commit:        commit,
 	}
-	archive, err := gp.createArchive(archiveOpts)
+
+	archive, err := gp.getOrCreateArchive(archiveOpts)
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(archive.GetFilePath())
 
 	if archive.IsEmpty() {
 		return nil, nil
 	}
 
-	archiveFile, err := gp.createArchiveFile(archive, commit)
+	archiveFile, err := gp.prepareArchiveFile(archiveOpts, archive)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create archive file: %s", err)
+		return nil, fmt.Errorf("cannot prepare archive file: %s", err)
 	}
 
 	archiveType := archive.GetType()
@@ -420,13 +476,13 @@ func (gp *GitMapping) StageDependenciesChecksum(stageName StageName) (string, er
 		return "", fmt.Errorf("unable to get latest commit: %s", err)
 	}
 
-	opts := git_repo.ChecksumOptions{
+	checksumOpts := git_repo.ChecksumOptions{
 		FilterOptions: gp.getRepoFilterOptions(),
 		Paths:         depsPaths,
 		Commit:        commit,
 	}
 
-	checksum, err := gp.GitRepo().Checksum(opts)
+	checksum, err := gp.getOrCreateChecksum(checksumOpts)
 	if err != nil {
 		return "", err
 	}
@@ -444,6 +500,10 @@ func (gp *GitMapping) PatchSize(fromCommit string) (int64, error) {
 		return 0, fmt.Errorf("unable to get latest commit: %s", err)
 	}
 
+	if fromCommit == toCommit {
+		return 0, nil
+	}
+
 	patchOpts := git_repo.PatchOptions{
 		FilterOptions:         gp.getRepoFilterOptions(),
 		FromCommit:            fromCommit,
@@ -452,11 +512,10 @@ func (gp *GitMapping) PatchSize(fromCommit string) (int64, error) {
 		WithBinary:            true,
 	}
 
-	patch, err := gp.createPatch(patchOpts)
+	patch, err := gp.getOrCreatePatch(patchOpts)
 	if err != nil {
 		return 0, err
 	}
-	defer os.RemoveAll(patch.GetFilePath())
 
 	fileInfo, err := os.Stat(patch.GetFilePath())
 	if err != nil {
@@ -514,17 +573,20 @@ func (gp *GitMapping) IsPatchEmpty(prevBuiltImage image.ImageInterface) (bool, e
 }
 
 func (gp *GitMapping) baseIsPatchEmpty(fromCommit, toCommit string) (bool, error) {
+	if fromCommit == toCommit {
+		return true, nil
+	}
+
 	patchOpts := git_repo.PatchOptions{
 		FilterOptions: gp.getRepoFilterOptions(),
 		FromCommit:    fromCommit,
 		ToCommit:      toCommit,
 	}
 
-	patch, err := gp.createPatch(patchOpts)
+	patch, err := gp.getOrCreatePatch(patchOpts)
 	if err != nil {
 		return false, err
 	}
-	defer os.RemoveAll(patch.GetFilePath())
 
 	return patch.IsEmpty(), nil
 }
@@ -540,17 +602,16 @@ func (gp *GitMapping) IsEmpty() (bool, error) {
 		Commit:        commit,
 	}
 
-	archive, err := gp.createArchive(archiveOpts)
+	archive, err := gp.getOrCreateArchive(archiveOpts)
 	if err != nil {
 		return false, err
 	}
-	defer os.RemoveAll(archive.GetFilePath())
 
 	return archive.IsEmpty(), nil
 }
 
-func (gp *GitMapping) getArchiveFileDescriptor(commit string) *ContainerFileDescriptor {
-	fileName := fmt.Sprintf("%s_%s.tar", gp.GetParamshash(), commit)
+func (gp *GitMapping) getArchiveFileDescriptor(archiveOpts git_repo.ArchiveOptions) *ContainerFileDescriptor {
+	fileName := fmt.Sprintf("%s.tar", objectToHashKey(archiveOpts))
 
 	return &ContainerFileDescriptor{
 		FilePath:          filepath.Join(gp.ArchivesDir, fileName),
@@ -558,19 +619,44 @@ func (gp *GitMapping) getArchiveFileDescriptor(commit string) *ContainerFileDesc
 	}
 }
 
-func (gp *GitMapping) createArchiveFile(archive git_repo.Archive, commit string) (*ContainerFileDescriptor, error) {
-	fileDesc := gp.getArchiveFileDescriptor(commit)
+func (gp *GitMapping) prepareArchiveFile(archiveOpts git_repo.ArchiveOptions, archive git_repo.Archive) (*ContainerFileDescriptor, error) {
+	fileDesc := gp.getArchiveFileDescriptor(archiveOpts)
 
-	err := renameFile(archive.GetFilePath(), fileDesc.FilePath)
-	if err != nil {
-		return nil, err
+	fileExists := true
+	if _, err := os.Stat(fileDesc.FilePath); os.IsNotExist(err) {
+		fileExists = false
+	} else if err != nil {
+		return nil, fmt.Errorf("unable to get stat of path %s: %s", fileDesc.FilePath, err)
+	}
+
+	if fileExists {
+		return fileDesc, nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(fileDesc.FilePath), os.ModePerm); err != nil {
+		return nil, fmt.Errorf("unable to create dir %s: %s", filepath.Dir(fileDesc.FilePath), err)
+	}
+
+	if err := os.Link(archive.GetFilePath(), fileDesc.FilePath); err != nil {
+		return nil, fmt.Errorf("unable to create hardlink %s to %s: %s", fileDesc.FilePath, archive.GetFilePath(), err)
 	}
 
 	return fileDesc, nil
 }
 
-func (gp *GitMapping) createPatchPathsListFile(paths []string, fromCommit, toCommit string) (*ContainerFileDescriptor, error) {
-	fileDesc := gp.getPatchPathsListFileDescriptor(fromCommit, toCommit)
+func (gp *GitMapping) preparePatchPathsListFile(patchOpts git_repo.PatchOptions, patch git_repo.Patch) (*ContainerFileDescriptor, error) {
+	fileDesc := gp.getPatchPathsListFileDescriptor(patchOpts)
+
+	fileExists := true
+	if _, err := os.Stat(fileDesc.FilePath); os.IsNotExist(err) {
+		fileExists = false
+	} else if err != nil {
+		return nil, fmt.Errorf("unable to get stat of path %s: %s", fileDesc.FilePath, err)
+	}
+
+	if fileExists {
+		return fileDesc, nil
+	}
 
 	f, err := fileDesc.Open(os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
@@ -578,7 +664,7 @@ func (gp *GitMapping) createPatchPathsListFile(paths []string, fromCommit, toCom
 	}
 
 	fullPaths := make([]string, 0)
-	for _, path := range paths {
+	for _, path := range patch.GetPaths() {
 		fullPaths = append(fullPaths, filepath.Join(gp.To, path))
 	}
 
@@ -596,19 +682,33 @@ func (gp *GitMapping) createPatchPathsListFile(paths []string, fromCommit, toCom
 	return fileDesc, nil
 }
 
-func (gp *GitMapping) createPatchFile(patch git_repo.Patch, fromCommit, toCommit string) (*ContainerFileDescriptor, error) {
-	fileDesc := gp.getPatchFileDescriptor(fromCommit, toCommit)
+func (gp *GitMapping) preparePatchFile(patchOpts git_repo.PatchOptions, patch git_repo.Patch) (*ContainerFileDescriptor, error) {
+	fileDesc := gp.getPatchFileDescriptor(patchOpts)
 
-	err := renameFile(patch.GetFilePath(), fileDesc.FilePath)
-	if err != nil {
-		return nil, err
+	fileExists := true
+	if _, err := os.Stat(fileDesc.FilePath); os.IsNotExist(err) {
+		fileExists = false
+	} else if err != nil {
+		return nil, fmt.Errorf("unable to get stat of path %s: %s", fileDesc.FilePath, err)
+	}
+
+	if fileExists {
+		return fileDesc, nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(fileDesc.FilePath), os.ModePerm); err != nil {
+		return nil, fmt.Errorf("unable to create dir %s: %s", filepath.Dir(fileDesc.FilePath), err)
+	}
+
+	if err := os.Link(patch.GetFilePath(), fileDesc.FilePath); err != nil {
+		return nil, fmt.Errorf("unable to create hardlink %s to %s: %s", fileDesc.FilePath, patch.GetFilePath(), err)
 	}
 
 	return fileDesc, nil
 }
 
-func (gp *GitMapping) getPatchPathsListFileDescriptor(fromCommit, toCommit string) *ContainerFileDescriptor {
-	fileName := fmt.Sprintf("%s_%s_%s-paths-list", gp.GetParamshash(), fromCommit, toCommit)
+func (gp *GitMapping) getPatchPathsListFileDescriptor(patchOpts git_repo.PatchOptions) *ContainerFileDescriptor {
+	fileName := fmt.Sprintf("%s.paths_list", objectToHashKey(patchOpts))
 
 	return &ContainerFileDescriptor{
 		FilePath:          filepath.Join(gp.PatchesDir, fileName),
@@ -616,8 +716,8 @@ func (gp *GitMapping) getPatchPathsListFileDescriptor(fromCommit, toCommit strin
 	}
 }
 
-func (gp *GitMapping) getPatchFileDescriptor(fromCommit, toCommit string) *ContainerFileDescriptor {
-	fileName := fmt.Sprintf("%s_%s_%s.patch", gp.GetParamshash(), fromCommit, toCommit)
+func (gp *GitMapping) getPatchFileDescriptor(patchOpts git_repo.PatchOptions) *ContainerFileDescriptor {
+	fileName := fmt.Sprintf("%s.patch", objectToHashKey(patchOpts))
 
 	return &ContainerFileDescriptor{
 		FilePath:          filepath.Join(gp.PatchesDir, fileName),
@@ -640,20 +740,4 @@ func (gp *GitMapping) makeCredentialsOpts() string {
 
 func (gp *GitMapping) getArchiveTypeLabelName() string {
 	return fmt.Sprintf("werf-git-%s-type", gp.GetParamshash())
-}
-
-func renameFile(fromPath, toPath string) error {
-	var err error
-
-	err = os.MkdirAll(filepath.Dir(toPath), os.ModePerm)
-	if err != nil {
-		return err
-	}
-
-	err = os.Rename(fromPath, toPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

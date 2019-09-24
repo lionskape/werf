@@ -207,6 +207,8 @@ func runRun() error {
 	}
 
 	c := build.NewConveyor(werfConfig, []string{imageName}, projectDir, projectTmpDir, ssh_agent.SSHAuthSock)
+	defer c.Terminate()
+
 	if err = c.ShouldBeBuilt(); err != nil {
 		return err
 	}
@@ -221,7 +223,9 @@ func runRun() error {
 		fmt.Printf("docker run %s\n", strings.Join(dockerRunArgs, " "))
 	} else {
 		return logboek.WithRawStreamsOutputModeOn(func() error {
-			return docker.CliRun(dockerRunArgs...)
+			return common.WithoutTerminationSignalsTrap(func() error {
+				return docker.CliRun(dockerRunArgs...)
+			})
 		})
 	}
 
