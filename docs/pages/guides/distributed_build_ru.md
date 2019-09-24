@@ -7,7 +7,7 @@ ref: documentation_guides_distributed_build
 lang: ru
 ---
 
-## Обзор задачи
+## WIP Обзор задачи
 
 Werf can store [_stages cache_]({{ site.baseurl }}/documentation/reference/stages_and_images.html#what-is-a-stage) in a Docker registry. It gives an opportunity to use a distributed build in the following cases:
 * **Dynamic resources.** You can setup a dynamic allocation of resources for building by using cloud providers. These resources can be temporary, so in build time a stages cache may be absent.

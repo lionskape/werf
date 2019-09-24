@@ -127,7 +127,7 @@ spec:
       - name: backend
         workingDir: /app
         command: [ "python3", "-m", "http.server", "8080" ]
-{{ include "werf_container_image" . | indent 8 }}
+{{ werf_container_image . | indent 8 }}
         livenessProbe:
           httpGet:
             path: /
@@ -143,7 +143,7 @@ spec:
           name: http
           protocol: TCP
         env:
-{{ include "werf_container_env" . | indent 8 }}
+{{ werf_container_env . | indent 8 }}
 ---
 apiVersion: v1
 kind: Service
@@ -162,13 +162,13 @@ spec:
 
 В конфигурации описывается создание Deployment'а `myapp-backend` (конструкция {% raw %}`{{ .Chart.Name }}-backend`{% endraw %} будет преобразована в `myapp-backend`) с четырьмя репликами.
 
-Конструкция {% raw %}`{{ include "werf_container_image" . | indent 8 }}`{% endraw %} использует внутренний Helm-шаблон Werf, который:
+Конструкция {% raw %}`{{ werf_container_image . | indent 8 }}`{% endraw %} — это использование функции Go-шаблонов, добавляемой Werf, которая:
 * всегда возвращает поле `image:` объекта Kubernetes с корректным именем образа, учитывая используемую схему тегирования (в примере это — `werf-registry.kube-system.svc.cluster.local:5000/myapp:latest`)
 * дополнительно может возвращать другие поля объекта Kubernetes, такие как `imagePullPolicy`, на основании заложенной логики и некоторых внешних условий.
 
-Go-шаблон `werf_container_image` предоставляет удобный способ указания имени образа в объекте Kubernetes из **описанной** (в `werf.yaml`) конфигурации. Как использовать шаблон в случае если в конфигурации описано несколько образов, читай подробнее [в соответствующей статье]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#werf_container_image).
+Функция `werf_container_image` позволяет удобно указывать имя образа в объекте Kubernetes исходя из **описанной** (в `werf.yaml`) конфигурации. Как использовать эту функцию в случае если в конфигурации описано несколько образов, читай подробнее [в соответствующей статье]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#werf_container_image).
 
-Конструкция {% raw %}`{{ include "werf_container_env" . | indent 8 }}`{% endraw %} использует другой внутренний Helm-шаблон Werf, который *может* возвращать содержимое секции `env:` соответствующего контейнера объекта Kubernetes. Использование Go-шаблона `werf_container_image` при описании объекта приводит к тому, что Kubernetes будет перезапускать pod'ы Deployment'а только если соответствующий образ изменился (смотри [подробнее]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#werf_container_env)).
+Конструкция {% raw %}`{{ werf_container_env . | indent 8 }}`{% endraw %} — это использование другой внутренней функции Werf, которая *может* возвращать содержимое секции `env:` соответствующего контейнера объекта Kubernetes. Использование функции `werf_container_image` при описании объекта приводит к тому, что Kubernetes будет перезапускать pod'ы Deployment'а только если соответствующий образ изменился (смотри [подробнее]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html#werf_container_env)).
 
 Наконец, создается сервис `myapp-backend`, для доступа к pod'ам Deployment'а `myapp-backend`.
 

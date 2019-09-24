@@ -38,7 +38,9 @@ export WERF_IMAGES_REPO=DOCKER_REGISTRY_REPO
 ### Интеграция с CI/CD pipeline'ами
 
 Согласно [описанным шагам]({{ site.baseurl }}/ru/documentation/reference/plugging_into_cicd/overview.html#ci-cd-pipelines-integration) по интеграции с CI/CD pipeline, необходимо определить следующие переменные:
- * [`WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL`]({{ site.baseurl }}/ru/documentation/reference/plugging_into_cicd/overview.html#werf_add_annotation_git_repository_url).
+ * [`WERF_ADD_ANNOTATION_PROJECT_GIT`]({{ site.baseurl }}/ru/documentation/reference/plugging_into_cicd/overview.html#werf_add_annotation_project_git);
+ * [`WERF_ADD_ANNOTATION_CI_COMMIT`]({{ site.baseurl }}/ru/documentation/reference/plugging_into_cicd/overview.html#werf_add_annotation_ci_commit).
+
 
 ### Интеграция с CI/CD процессами
 
@@ -67,14 +69,15 @@ docker login -u USER -p PASSWORD $WERF_IMAGES_REPO
 
 export WERF_TAG_GIT_TAG=GIT_TAG
 export WERF_TAG_GIT_BRANCH=GIT_BRANCH
-export WERF_ADD_ANNOTATION_GIT_REPOSITORY_URL="project.werf.io/ci-url=https://cicd.domain.com/project/x"
+export WERF_ADD_ANNOTATION_PROJECT_GIT="project.werf.io/git=https://cicd.domain.com/project/x"
+export WERF_ADD_ANNOTATION_CI_COMMIT="ci.werf.io/commit=b9a1ddd366aa6a20a0fd43fb6612f349d33465ff"
 export WERF_ENV=ENV
 export WERF_GIT_TAG_STRATEGY_LIMIT=10
 export WERF_GIT_TAG_STRATEGY_EXPIRY_DAYS=30
 export WERF_LOG_COLOR_MODE=on
 export WERF_LOG_PROJECT_DIR=1
 export WERF_ENABLE_PROCESS_EXTERMINATOR=1
-export WERF_LOG_TERMINAL_WIDTH=100
+export WERF_LOG_TERMINAL_WIDTH=95
 ```
 
 Исправьте скрипт для работы с вашей CI/CD системой: измените присваиваемые значения переменных `WERF_*` согласно вашему случаю. Будет полезно ознакомиться и ориентироваться на статью по [интеграции с GitLab CI]({{ site.baseurl }}/ru/documentation/reference/plugging_into_cicd/gitlab_ci.html), чтобы понимать какие значения для переменных вам стоит брать.
