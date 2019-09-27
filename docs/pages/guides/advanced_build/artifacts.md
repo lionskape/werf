@@ -3,6 +3,7 @@ title: Artifacts
 sidebar: documentation
 permalink: documentation/guides/advanced_build/artifacts.html
 author: Artem Kladov <artem.kladov@flant.com>
+ref: documentation_guides_advanced_build_artifacts
 ---
 
 ## Task Overview

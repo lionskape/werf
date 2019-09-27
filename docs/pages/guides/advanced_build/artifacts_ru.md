@@ -13,6 +13,7 @@ lang: ru
 
 Werf может [импортировать]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/import_directive.html) ресурсы из других образов и образов [артефактов]({{ site.baseurl }}/ru/documentation/configuration/stapel_artifact.html). Это позволяет вынести часть процесса сборки в отдельный образ, либо вынести сборку вспомогательных инструментов в отдельный образ, копируя в образ приложения только необходимый результат. Этот функционал Werf похож на [соответствующий функционал Docker](https://docs.docker.com/develop/develop-images/multistage-build/) (поддерживаемый начиная с Docker версии 17.05), но в Werf имеется больше возможностей (в частности, по импорту файлов).
 
+В статье рассматривается сборка тестового приложения на GO, после чего инструкции сборки будут оптимизированы для уменьшения размера образа с ипользованием монтирования
 In this article, we will build an example GO application. Then we will optimize the build instructions to substantial reduce image size with using mount directives.
 
 ## Requirements
