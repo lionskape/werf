@@ -1,7 +1,7 @@
 ---
 title: Artifacts
 sidebar: documentation
-permalink: documentation/guides/advanced_build/artifacts.html
+permalink: ru/documentation/guides/advanced_build/artifacts.html
 author: Artem Kladov <artem.kladov@flant.com>
 ref: documentation_guides_advanced_build_artifacts
 lang: ru
@@ -13,30 +13,30 @@ lang: ru
 
 Werf может [импортировать]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/import_directive.html) ресурсы из других образов и образов [артефактов]({{ site.baseurl }}/ru/documentation/configuration/stapel_artifact.html). Это позволяет вынести часть процесса сборки в отдельный образ, либо вынести сборку вспомогательных инструментов в отдельный образ, копируя в образ приложения только необходимый результат. Этот функционал Werf похож на [соответствующий функционал Docker](https://docs.docker.com/develop/develop-images/multistage-build/) (поддерживаемый начиная с Docker версии 17.05), но в Werf имеется больше возможностей (в частности, по импорту файлов).
 
-В статье рассматривается сборка тестового приложения на GO, после чего инструкции сборки будут оптимизированы для уменьшения размера образа с ипользованием монтирования
-In this article, we will build an example GO application. Then we will optimize the build instructions to substantial reduce image size with using mount directives.
+В статье сначала рассматривается сборка тестового приложения на GO, а затем инструкции сборки оптимизируются с ипользованием опций монтирования, для уменьшения размера образа.
 
-## Requirements
+## Требования
 
-* Installed [Werf dependencies]({{ site.baseurl }}/documentation/guides/installation.html#install-dependencies) on the host system.
-
-* Installed [Multiwerf](https://github.com/flant/multiwerf) on the host system.
+* Установленные [зависимости Werf]({{ site.baseurl }}/ru/documentation/guides/installation.html#install-dependencies).
+* Установленный [Multiwerf](https://github.com/flant/multiwerf).
 
 ### Select werf version
 
-This command should be run prior running any werf command in your shell session:
+### Выбор версии Werf
 
-```
+Перед началом работы с Werf, нужно выбрать версию Werf, которую вы будете использовать. Для выбора актуальной версии Werf в канале beta, релиза 1.0, выполните в вашей shell-сессии:
+
+```shell
 source <(multiwerf use 1.0 beta)
 ```
 
-## Sample application
+## Тестовое приложение
 
-The example application is the [Hotel Booking Example](https://github.com/revel/examples/tree/master/booking), written in [GO](https://golang.org/) for [Revel Framework](https://github.com/revel).
+Возьмем в качестве примера приложение [Hotel Booking](https://github.com/revel/examples/tree/master/booking), написанное на [GO](https://golang.org/) под  фреймворк [Revel Framework](https://github.com/revel).
 
-### Building
+### Сборка
 
-Create a `booking` directory and place the following `werf.yaml` in the `booking` directory:
+Создайте папку `booking` и файл `werf.yaml` в ней, следующего содержания:
 {% raw %}
 ```yaml
 project: hotel-booking
@@ -44,7 +44,7 @@ configVersion: 1
 ---
 
 image: go-booking
-from: golang
+from: golang:1.10
 ansible:
   beforeInstall:
   - name: Install additional packages
@@ -68,39 +68,37 @@ ansible:
 ```
 {% endraw %}
 
-The config describes instructions to build one image — `go-booking`.
+Приведенные инструкции описывают сборку  одного образа — `go-booking`.
 
-Build the application by executing the following command in the `booking` directory:
+Соберите образ приложения, выполнив следующую команду в папке `booking`:
 
 ```bash
 werf build --stages-storage :local
 ```
 
-### Running
+### Запуск
 
-Run the application by executing the following command in the `booking` directory:
+Запустите приложение, выполнив следующую  команду в папке `booking`.
 ```bash
-werf run --stages-storage :local --docker-options="-d -p 9000:9000 --rm --name go-booking"  go-booking -- /app/run.sh
+werf run --stages-storage :local --docker-options="-d -p 9000:9000 --name go-booking"  go-booking -- /app/run.sh
 ```
 
-Check that container is running by executing the following command:
+Убедитесь, что контейнер запустился, выполнив следующую команду:
 ```bash
 docker ps -f "name=go-booking"
 ```
 
-You should see a running container with a random name, like this:
+Вы должны увидеть запущенный контейнер `go-booking`, например вывод может быть следующим:
 ```bash
 CONTAINER ID  IMAGE                                          COMMAND        CREATED        STATUS        PORTS                   NAMES
 41d6f49798a8  image-stage-hotel-booking:f27efaf9...1456b0b4  "/app/run.sh"  3 minutes ago  Up 3 minutes  0.0.0.0:9000->9000/tcp  go-booking
 ```
 
-Open in a web browser the following URL — [http://localhost:9000](http://localhost:9000).
+Откройте в браузере адрес [http://localhost:9000](http://localhost:9000) — вы должны увидеть страницу `revel framework booking demo`. Выполните авторизацию введя `demo` в качестве логина и пароля.
 
-The `revel framework booking demo` page should open, and you can login by entering `demo/demo` as a login/password.
+### Определение размера образа
 
-### Getting the image size
-
-Determine the image size by executing:
+Определите размер собранного образа, выполнив:
 
 {% raw %}
 ```bash
@@ -108,24 +106,23 @@ docker images `docker ps -f "name=go-booking" --format='{{.Image}}'`
 ```
 {% endraw %}
 
-The output will be something like this:
+Пример вывода:
 ```bash
 REPOSITORY                 TAG                   IMAGE ID          CREATED             SIZE
 image-stage-hotel-booking  f27efaf9...1456b0b4   0bf71cb34076      10 minutes ago      1.04 GB
 ```
 
-Pay attention, that the image size of the application is **above 1 GB**.
+Обратите внимание, что размер образа приложения получился **более 1 гигабайта**.
 
-## Optimize sample application with artifacts
+## Оптимизация сборки приложения с использованием артефактов
 
-The config above can be optimized to improve the efficiency of the build process.
+Можно оптимизировать сборку образа, повысив эффективноть процесса.
 
-The only the files in the `/app` folder are needed to run the application. So we don't need Go itself and downloaded packages. The use of [werf artifacts]({{ site.baseurl }}/documentation/configuration/stapel_artifact.html) makes it possible to import only specified files into another image.
+Непосредственно для запуска приложения необходимы только файлы в папке `/app`, по-этому из образа можно удалить скачанные пакеты и сам компилятор Go. Использование функционала [артефактов в Werf]({{ site.baseurl }}/ru/documentation/configuration/stapel_artifact.html) позволяет импортировать в образ только конкретные файлы.
 
-### Building
+### Сборка
 
-Replace `werf.yaml` with the following content:
-
+Замените имеющийся фаил `werf.yaml` следующим содержимым:
 {% raw %}
 ```yaml
 project: hotel-booking
@@ -133,7 +130,7 @@ configVersion: 1
 ---
 
 artifact: booking-app
-from: golang
+from: golang:1.10
 ansible:
   beforeInstall:
   - name: Install additional packages
@@ -156,7 +153,7 @@ ansible:
       revel build --run-mode dev github.com/revel/examples/booking /app
 ---
 image: go-booking
-from: ubuntu
+from: ubuntu:18.04
 import:
 - artifact: booking-app
   add: /app
@@ -165,60 +162,59 @@ import:
 ```
 {% endraw %}
 
-In the optimized config, we build the application in the `booking-app` artifact and import the `/app` directory into the `go-booking` image.
+В оптимизированных инструкциях сборки само приложение собирается в артефакте `booking-app`, после чего получившиеся файлы импортируются в образ `go-booking`.
 
-Pay attention, that `go-booking` image based on the ubuntu image, but not on the golang image.
+Обратите внимание, что основа образа `go-booking` — образ `ubuntu`, а не `golang`.
 
-Build the application with the modified config:
+Соберите приложение с измененным файлом инструкций:
 ```yaml
 werf build --stages-storage :local
 ```
 
-### Running
+### Запуск
 
-Before running the modified application, you need to stop running `go-booking` container we built. Otherwise, the new container can't bind to 9000 port on localhost. E.g., execute the following command to stop last created container:
+Перед запуском измененного приложения нужно остановить и удалить запущенный контейнер `go-booking`, собранный и запущенный ранее. В противном случае новый контейнер не сможет запуститься из-за того, что контейнер с таким именем уже существует или порт 9000 занят. Например, выполните следующие команды для остановки и удаления контейнера `go-booking`:
 
 ```bash
-docker stop go-booking
+docker stop go-booking && docker rm go-booking
 ```
 
-Run the modified application by executing the following command:
+Запустите измененное приложение выплонив следующую команду:
 ```bash
-werf run --stages-storage :local --docker-options="-d -p 9000:9000 --rm --name go-booking" go-booking -- /app/run.sh
+werf run --stages-storage :local --docker-options="-d -p 9000:9000 --name go-booking" go-booking -- /app/run.sh
 ```
 
-Check that container is running by executing the following command:
+
+Убедитесь, что контейнер запустился, выполнив следующую команду:
 ```bash
 docker ps -f "name=go-booking"
 ```
 
-You should see a running container with a random name, like this:
+Вы должны увидеть запущенный контейнер `go-booking`, например вывод может быть следующим:
 ```bash
 CONTAINER ID  IMAGE                                          COMMAND        CREATED        STATUS        PORTS                   NAMES
 41d6f49798a8  image-stage-hotel-booking:306aa6e8...f71dbe53  "/app/run.sh"  3 minutes ago  Up 3 minutes  0.0.0.0:9000->9000/tcp  go-booking
 ```
 
-Open in a web browser the following URL — [http://localhost:9000](http://localhost:9000).
+Откройте в браузере адрес [http://localhost:9000](http://localhost:9000) — вы должны увидеть страницу `revel framework booking demo`. Выполните авторизацию введя `demo` в качестве логина и пароля.
 
-The `revel framework booking demo` page should open, and you can login by entering `demo/demo` as a login/password.
+### Определение размера образа
 
-### Getting images size
-
-Determine the image size of optimized build, by executing:
+Определите размер образа, выполнив:
 {% raw %}
 ```bash
 docker images `docker ps -f "name=go-booking" --format='{{.Image}}'`
 ```
 {% endraw %}
 
-The output will be something like this:
+Пимер вывода:
 ```bash
 REPOSITORY                   TAG                      IMAGE ID         CREATED            SIZE
 image-stage-hotel-booking    306aa6e8...f71dbe53      0a9943b0da6a     3 minutes ago      103 MB
 ```
 
-Our example shows that **with using artifacts**, the image size **smaller by more than 90%** than the original image size!
+Сравнивая размеры образов можно увидеть, что **образ собранный с использованием артефактов, меньше на 90%** чем образ обычной сборки!
 
-## Conclusions
+## Вывод
 
-The example shows us that using artifacts is a great way to exclude what shouldn't be in the result image. Moreover, you can use artifacts in any image described in a `werf.yaml` config. In some cases, it increases the speed of build.
+Приведенный пример показывает, что использование артефактов — отличный способ выбросить ненужное из конечного образа. Более того, вы можете использовать  один и тот-же артефакт (или артефакты) в нескольких образах, определеных в одном `werf.yaml`. Этот прием не редко позволяет увеличить скорость сборки.

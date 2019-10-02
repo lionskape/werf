@@ -1,27 +1,27 @@
 ---
 title: First application
 sidebar: documentation
-permalink: documentation/guides/advanced_build/first_application.html
+permalink: ru/documentation/guides/advanced_build/first_application.html
 author: Ivan Mikheykin <ivan.mikheykin@flant.com>
 ref: documentation_guides_advanced_build_first_application
+lang: ru
 ---
 
-## Task Overview
+## Обзор задачи
 
-In this tutorial, we will build an image of simple PHP [Symfony application](https://github.com/symfony/demo). It includes the following steps:
+В статье рассматривается сборка простого PHP-приложения — [Symfony application](https://github.com/symfony/demo), которая включает следующие шаги:
 
-1. Installing required software and dependencies: `php`, `curl`, `php-sqlite` for the application,  `php-xml` and `php-zip` for the composer.
-1. Setting up an `app` user and group for the web server.
-1. Installing the composer from a `phar` file, which is first downloaded with `curl`.
-1. Installing other project dependencies with the composer.
-1. Adding the application code to the `/app` directory of the resulting image.
-   This directory and all files in it should belong to `app:app`.
-1. Setting up the IP address that the web server will listen to. This is done with a setting in `/opt/start.sh`, which will run when the container starts.
+1. Установка требуемых пакетв и зависимостей: `php`, `curl`, `php-sqlite` (для приложения),  `php-xml` и `php-zip` (для composer).
+1. Создание пользователя и группы `app` для работы веб-сервера.
+1. Скачивание и установка composer из `phar-файла`.
+1. Установка других зависимостей проекта с помощью composer.
+1. Добавление кода приложения в папку `/app` конечного образа и установка владельца `app:app` на файлы и папки.
+1. Установка IP адресов, на которых web-сервер будет принимать запросы. This is done with a setting in `/opt/start.sh`, which will run when the container starts.
 1. Making custom setup actions. As an illustration for the setup stage, we will write current date to `version.txt`.
 
 Also, we will check that the application works and push the image in a docker registry.
 
-## Requirements
+## Требования
 
 * Minimal knowledge of [Docker](https://www.docker.com/) and [Dockerfile instructions](https://docs.docker.com/engine/reference/builder/).
 * Installed [Werf dependencies]({{ site.baseurl }}/documentation/guides/installation.html#install-dependencies) on the host system.
