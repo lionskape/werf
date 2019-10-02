@@ -9,44 +9,44 @@ lang: ru
 
 ## Обзор задачи
 
-В статье рассматривается сборка простого PHP-приложения — [Symfony application](https://github.com/symfony/demo), которая включает следующие шаги:
+В статье рассматривается сборка простого PHP-приложения — [Symfony application](https://github.com/symfony/demo), которая включает в том числе следующие шаги:
 
-1. Установка требуемых пакетв и зависимостей: `php`, `curl`, `php-sqlite` (для приложения),  `php-xml` и `php-zip` (для composer).
+1. Установка требуемых пакетов и зависимостей: `php`, `curl`, `php-sqlite` (для приложения),  `php-xml` и `php-zip` (для composer).
 1. Создание пользователя и группы `app` для работы веб-сервера.
 1. Скачивание и установка composer из `phar-файла`.
 1. Установка других зависимостей проекта с помощью composer.
 1. Добавление кода приложения в папку `/app` конечного образа и установка владельца `app:app` на файлы и папки.
-1. Установка IP адресов, на которых web-сервер будет принимать запросы. This is done with a setting in `/opt/start.sh`, which will run when the container starts.
-1. Making custom setup actions. As an illustration for the setup stage, we will write current date to `version.txt`.
+1. Установка IP адресов, на которых web-сервер будет принимать запросы. Это делается в скрипте  `/opt/start.sh`, который запускается во время старта контейнера.
+1. Выполнение других действий по настройке приложения. В качестве примера таких действий, мы будем записывать текущую дату в фаил `version.txt`.
 
-Also, we will check that the application works and push the image in a docker registry.
+Также, мы проверим что приложение работает и запушим образ в Docker-регистри.
 
 ## Требования
 
-* Minimal knowledge of [Docker](https://www.docker.com/) and [Dockerfile instructions](https://docs.docker.com/engine/reference/builder/).
-* Installed [Werf dependencies]({{ site.baseurl }}/documentation/guides/installation.html#install-dependencies) on the host system.
-* Installed [Multiwerf](https://github.com/flant/multiwerf) on the host system.
+* Минимальные знания [Docker](https://www.docker.com/) и [инструкций Dockerfile'а](https://docs.docker.com/engine/reference/builder/).
+* Установленные [зависимости Werf]({{ site.baseurl }}/ru/documentation/guides/installation.html#install-dependencies).
+* Установленный [Multiwerf](https://github.com/flant/multiwerf).
 
-### Select Werf version
+### Выбор версии Werf
 
-This command should be run prior running any Werf command in your shell session:
+Перед началом работы с Werf, нужно выбрать версию Werf, которую вы будете использовать. Для выбора актуальной версии Werf в канале beta, релиза 1.0, выполните в вашей shell-сессии:
 
 ```shell
 source <(multiwerf use 1.0 beta)
 ```
 
-## Step 1: Add a config
+## Шаг 1: Добавление конфигурации
 
-To implement these steps and requirements with Werf we will add a special file called `werf.yaml` to the application's source code.
+Чтобы выполнить все необходимые шаги по сборке с помощью Werf, добавим специальный файл `werf.yaml` к исходному коду приложения.
 
-1. Clone the [Symfony Demo Application](https://github.com/symfony/demo) repository to get the source code:
+1. Клонироуйте git-репозиторий [Symfony Demo Application](https://github.com/symfony/demo):
 
     ```shell
     git clone https://github.com/symfony/symfony-demo.git
     cd symfony-demo
     ```
 
-2.  In the project root directory create a `werf.yaml` with the following contents:
+2.  В корневой папке проекта создайте файл `werf.yaml` следующего содержания:
 
     <div class="tabs">
       <a href="javascript:void(0)" class="tabs__btn active" onclick="openTab(event, 'tabs__btn', 'tabs__content', 'Ansible')">Ansible</a>
@@ -199,54 +199,53 @@ To implement these steps and requirements with Werf we will add a special file c
     {% endraw %}
     </div>
 
-## Step 2: Build and Run the Application
+## Шаг 2: Соберите и запустите приложение
 
-Let's build and run our first application.
+Давайте соберем и запустим наше первое приложение
 
-1.  `cd` to the project root directory.
+1.  Перейдите в корневую папку проекта.
 
-2.  Build an image:
+2.  Соберите образ приложения:
 
     ```shell
     werf build --stages-storage :local
     ```
 
-    > There is a known [issue](https://github.com/composer/composer/issues/945) in composer, so if you've got the `proc_open(): fork failed - Cannot allocate memory` error when running build add 1GB swap file. How to add swap space read [here](https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-16-04).
+    > При работе с composer может возникать известная [ошибка](https://github.com/composer/composer/issues/945). Если вы получили при сборке ошибку `proc_open(): fork failed - Cannot allocate memory`, добавьте 1ГБ swap-фаил. Как это сделать, например, читай [тут](https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-16-04).
 
-3.  Run a container from the image:
+3.  Запустите контейнер из собранного образа:
 
     ```shell
     werf --stages-storage :local run --docker-options="-d -p 8000:8000" -- /app/start.sh
     ```
 
-4.  Check that the application runs and responds:
+4.  Проверьте что приложение запустилось и отвечает:
 
     ```shell
     curl localhost:8000
     ```
 
-## Step 3: Push image into docker registry
+## Шаг 3: Загрузите образ в Docker-registry
 
-Werf can be used to push a built image into docker-registry.
+С помощью Werf можно пушить собранные образы в Docker-registry.
 
-1. Run local docker-registry:
+1. Запустите локальный Docker-registry:
 
     ```shell
     docker run -d -p 5000:5000 --restart=always --name registry registry:2
     ```
 
-2. Publish image with werf using custom tagging strategy with docker tag `v0.1.0`:
+2. Загрузите образ в Docker-registry используя Werf с пользовательской моделью тэгирования, используя тэг `v0.1.0`:
 
     ```shell
     werf publish --stages-storage :local --images-repo localhost:5000/symfony-demo --tag-custom v0.1.0
     ```
 
-## What Can Be Improved
+## Что можно улучшить
 
-This example has space for further improvement:
+В приведенном примере есть что улучшить:
+* Набор комманд создания скрипта `start.sh` можно легко заменить на одну команду — git, а сам фаил `start.sh` хранить в git-репозитории.
+* Если хранить фаил в git-репозитории, то при его копировании можно сразу же (в той-же команде) указывать необходимые права.
+* Лучше использовать `composer install` вместо `composer update` чобы устанавливать зависимости согласно версий, закрепленных в файлах `composer.lock`, `package.json` и `yarn.lock`. Также, при сборке необходима проверка этих файлов и запуск `composer install` при их изменении. Чтобы добиться этого, в Werf есть директива `stageDependencies`.
 
-* Set of commands for creating `start.sh` can be easily replaced with a single git command, and the file itself stored in the git repository.
-* As we copy files with a git command, we can set file permissions with the same command.
-* `composer install` instead of `composer update` should be used to install dependencies with versions fixed in files `composer.lock`, `package.json` and `yarn.lock`. Also, it's best to first check these files and run `composer install` when needed. To solve this problem werf have so-called `stageDependencies` directive.
-
-These issues are further discussed in [reference]({{ site.baseurl }}/documentation/configuration/stapel_image/git_directive.html).
+Решение этих задач рассматривается в [соответствующем разделе]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/git_directive.html) документации.

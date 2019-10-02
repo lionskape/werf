@@ -20,8 +20,6 @@ Werf может [импортировать]({{ site.baseurl }}/ru/documentation
 * Установленные [зависимости Werf]({{ site.baseurl }}/ru/documentation/guides/installation.html#install-dependencies).
 * Установленный [Multiwerf](https://github.com/flant/multiwerf).
 
-### Select werf version
-
 ### Выбор версии Werf
 
 Перед началом работы с Werf, нужно выбрать версию Werf, которую вы будете использовать. Для выбора актуальной версии Werf в канале beta, релиза 1.0, выполните в вашей shell-сессии:
