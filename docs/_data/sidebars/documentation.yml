@@ -350,7 +350,7 @@ entries:
               - title: Итоговый список директив
                 url: /documentation/configuration/stapel_image/image_directives.html
 
-          - title: Артифакты Stapel
+          - title: Артефакты Stapel
             url: /documentation/configuration/stapel_artifact.html
 
           - title: Деплой в Kubernetes
@@ -448,7 +448,7 @@ entries:
               - title: Использование монтирования
                 url: /ru/documentation/guides/advanced_build/mounts.html
 
-              - title: Использование артифактов
+              - title: Использование артефактов
                 url: /ru/documentation/guides/advanced_build/artifacts.html
 
       - title: CLI Commands

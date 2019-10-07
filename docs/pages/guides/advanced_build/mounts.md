@@ -3,6 +3,7 @@ title: Mounts
 sidebar: documentation
 permalink: documentation/guides/advanced_build/mounts.html
 author: Artem Kladov <artem.kladov@flant.com>
+ref: documentation_guides_advanced_build_mounts
 ---
 
 ## Task Overview
@@ -348,7 +349,7 @@ The output will be like this:
 
 Also, approximately `77MB` of space occupy files in directories mounted with `from: tmp_dir`. These files also excluded from the image and deleted from the host at the end of image building.
 
-The total size difference between images with and without using mounts is about 730 MB (the result of 1.04 GB — 335 MB).
+The total size difference between images with and without using mounts is about `730MB` (the result of 1.04GB — 335MB).
 
 **Our example shows that with using werf mounts the image size smaller by more than 68% than the original image size!**
 
