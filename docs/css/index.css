@@ -5,7 +5,8 @@ body {
 }
 
 .page {
-    font-family: 'Work Sans', sans-serif;
+    /* font-family: 'Work Sans', sans-serif; */
+    font-family: 'Open Sans', sans-serif;
     line-height: 1.16;
 }
 
