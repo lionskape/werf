@@ -1,12 +1,13 @@
 ---
-title: Multi-images application
+title: Приложение с несколькими образами
 sidebar: documentation
-permalink: documentation/guides/advanced_build/multi_images.html
+permalink: ru/documentation/guides/advanced_build/multi_images.html
 author: Artem Kladov <artem.kladov@flant.com>
 ref: documentation_guides_advanced_build_multi_images
+lang: ru
 ---
 
-## Task Overview
+## Обзор задачи
 
 Often a single application consists of several microservices. It can be microservices built using different technologies and programming languages. E.g., a Yii application which has logic application and worker application. The common practice is to place Dockerfiles into separate directories. So, with Dockerfile, you can't describe all components of the application in one file. As you need to describe image configuration in separate files, you can't share a part of configuration between images.
 

@@ -1,5 +1,5 @@
 ---
-title: Artifacts
+title: Использование артефактов
 sidebar: documentation
 permalink: ru/documentation/guides/advanced_build/artifacts.html
 author: Artem Kladov <artem.kladov@flant.com>
@@ -13,7 +13,7 @@ lang: ru
 
 Werf может [импортировать]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/import_directive.html) ресурсы из других образов и образов [артефактов]({{ site.baseurl }}/ru/documentation/configuration/stapel_artifact.html). Это позволяет вынести часть процесса сборки в отдельный образ, либо вынести сборку вспомогательных инструментов в отдельный образ, копируя в образ приложения только необходимый результат. Этот функционал Werf похож на [соответствующий функционал Docker](https://docs.docker.com/develop/develop-images/multistage-build/) (поддерживаемый начиная с Docker версии 17.05), но в Werf имеется больше возможностей (в частности, по импорту файлов).
 
-В статье сначала рассматривается сборка тестового приложения на GO, а затем инструкции сборки оптимизируются с ипользованием опций монтирования, для уменьшения размера образа.
+В статье сначала рассматривается сборка тестового приложения на GO, а затем инструкции сборки оптимизируются с иcпользованием артефактов, для существенного уменьшения размера образа.
 
 ## Требования
 
@@ -66,7 +66,7 @@ ansible:
 ```
 {% endraw %}
 
-Приведенные инструкции описывают сборку  одного образа — `go-booking`.
+Приведенные инструкции описывают сборку одного образа — `go-booking`.
 
 Соберите образ приложения, выполнив следующую команду в папке `booking`:
 
@@ -76,7 +76,7 @@ werf build --stages-storage :local
 
 ### Запуск
 
-Запустите приложение, выполнив следующую  команду в папке `booking`.
+Запустите приложение, выполнив следующую  команду в папке `booking`:
 ```bash
 werf run --stages-storage :local --docker-options="-d -p 9000:9000 --name go-booking"  go-booking -- /app/run.sh
 ```
@@ -86,7 +86,7 @@ werf run --stages-storage :local --docker-options="-d -p 9000:9000 --name go-boo
 docker ps -f "name=go-booking"
 ```
 
-Вы должны увидеть запущенный контейнер `go-booking`, например вывод может быть следующим:
+Вы должны увидеть запущенный контейнер `go-booking`, например вывод может быть подобен следующему:
 ```bash
 CONTAINER ID  IMAGE                                          COMMAND        CREATED        STATUS        PORTS                   NAMES
 41d6f49798a8  image-stage-hotel-booking:f27efaf9...1456b0b4  "/app/run.sh"  3 minutes ago  Up 3 minutes  0.0.0.0:9000->9000/tcp  go-booking
@@ -114,7 +114,7 @@ image-stage-hotel-booking  f27efaf9...1456b0b4   0bf71cb34076      10 minutes ag
 
 ## Оптимизация сборки приложения с использованием артефактов
 
-Можно оптимизировать сборку образа, повысив эффективноть процесса.
+Можно оптимизировать процесс сборки образа.
 
 Непосредственно для запуска приложения необходимы только файлы в папке `/app`, по-этому из образа можно удалить скачанные пакеты и сам компилятор Go. Использование функционала [артефактов в Werf]({{ site.baseurl }}/ru/documentation/configuration/stapel_artifact.html) позволяет импортировать в образ только конкретные файлы.
 
@@ -177,11 +177,10 @@ werf build --stages-storage :local
 docker stop go-booking && docker rm go-booking
 ```
 
-Запустите измененное приложение выплонив следующую команду:
+Запустите измененное приложение, выполнив следующую команду:
 ```bash
 werf run --stages-storage :local --docker-options="-d -p 9000:9000 --name go-booking" go-booking -- /app/run.sh
 ```
-
 
 Убедитесь, что контейнер запустился, выполнив следующую команду:
 ```bash
