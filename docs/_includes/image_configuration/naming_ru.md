@@ -1,18 +1,18 @@
-Images are declared with _image_ directive: `image: <image name>`.
-The _image_ directive starts a description for building an application image.
-The _image name_ is a string, similar to the image name in Docker:
+Образы описываются с помощью директивы _image_: `image: <image name>`.
+С директивы _image_ начинается описание конкретного образа.
+Параметр _image name_ — строка с именем образа, аналогичная соответствующей в Docker:
 
 ```yaml
 image: frontend
 ```
 
-If _image_ only one in the config, it can be nameless:
+Если в файле конфигурации описывается только один образ, то он может быть безымянным:
 
 ```yaml
 image: ~
 ```
 
-In the config with multiple, **all images** must have names:
+Если в файле конфигурации описывается более одного образа, то **каждый образ** должен иметь собственное имя:
 
 ```yaml
 image: frontend
@@ -22,17 +22,16 @@ image: backend
 ...
 ```
 
-An _image_ can have several names, set as a list in YAML syntax
-(this usage is equal to describing similar images with different names):
+Образ может иметь несколько имен, указываемых в виде YAML-списка (это эквивалентно описанию нескольких одинаковых образов с разными именами):
 
 ```yaml
 image: [main-front,main-back]
 ```
 
-You can use _image name_ for most commands to execute ones for specific _image(s)_:
-* [werf build \[IMAGE_NAME...\] \[options\]]({{ site.baseurl }}/documentation/cli/main/build.html)
-* [werf publish \[IMAGE_NAME...\] \[options\]]({{ site.baseurl }}/documentation/cli/main/publish.html)
-* [werf build-and-publish \[IMAGE_NAME...\] \[options\]]({{ site.baseurl }}/documentation/cli/main/build_and_publish.html)
-* [werf run \[options\] \[IMAGE_NAME\] \[-- COMMAND ARG...\]]({{ site.baseurl }}/documentation/cli/main/run.html)
+Указав имя образа вы можете использовать его впоследствии в большинстве команд, например:
+* [werf build \[IMAGE_NAME...\] \[options\]]({{ site.baseurl }}/ru/documentation/cli/main/build.html)
+* [werf publish \[IMAGE_NAME...\] \[options\]]({{ site.baseurl }}/ru/documentation/cli/main/publish.html)
+* [werf build-and-publish \[IMAGE_NAME...\] \[options\]]({{ site.baseurl }}/ru/documentation/cli/main/build_and_publish.html)
+* [werf run \[options\] \[IMAGE_NAME\] \[-- COMMAND ARG...\]]({{ site.baseurl }}/ru/documentation/cli/main/run.html)
 
-Also, _image name_ is used for naming when publishing built image into registry (read about it in separate [article]({{ site.baseurl }}/documentation/reference/publish_process.html)).
+Также, имя образа используется при загрузке собранного образа в registry (читайте подробнее в соответствующей [статье]({{ site.baseurl }}/ru/documentation/reference/publish_process.html)).
