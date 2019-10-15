@@ -1,19 +1,20 @@
 ---
-title: Introduction
+title: Общие сведения
 sidebar: documentation
-permalink: documentation/configuration/introduction.html
+permalink: ru/documentation/configuration/introduction.html
 ref: documentation_configuration_introduction
+lang: ru
 author: Alexey Igrychev <alexey.igrychev@flant.com>, Timofey Kirillov <timofey.kirillov@flant.com>
 ---
 
-## What is werf config?
+## Что такое конфигурация Werf?
 
-Application should be configured to use Werf. This configuration includes:
+Для использования Werf в приложении должна быть описана конфигурация, которая включает в себя:
 
-1. Definition of project meta information such as project name, which will affect build, deploy and other commands.
-2. Definition of the images to be built.
+1. Определение мета-информации проекта, например — имени проекта, которое будет впоследствии влиять на результат сборки, деплоя и другие команды.
+2. Определение списка образов проекта и инструкций их сборки.
 
-Werf uses YAML configuration file `werf.yaml` placed in the root folder of your application. The config is a collection of config sections -- parts of YAML file separated by three hyphens (http://yaml.org/spec/1.2/spec.html#id2800132):
+Конфигурация Werf хранится в YAML-файле `werf.yaml` в корневой папке проекта (приложения), и представляет собой набор секций конфигурации -- частей YAML-файла, разделенных тремя дефисами (http://yaml.org/spec/1.2/spec.html#id2800132):
 
 ```yaml
 CONFIG_SECTION
@@ -23,15 +24,15 @@ CONFIG_SECTION
 CONFIG_SECTION
 ```
 
-Each config section has a type. There are currently 3 types of config sections:
+Каждая секция конфигурации может быть одного типа из трех:
 
-1. Config section to describe project meta information, which will be referred to as *meta config section*.
-2. Config section to describe image build instructions, which will be referred to as *image config section*.
-3. Config section to describe artifact build instructions, which will be referred to as *artifact config section*.
+1. Секция для описания мета-информации проекта, далее — *секция мета-информации*.
+2. Секция описания инструкций сборки образа, далее — *секция образа*.
+3. Секция описания инструкций сборки артефакта, далее — *секция артефакта*.
 
-More types can be added in the future.
+В будущем, возможно, количество типов увеличится.
 
-### Meta config section
+### Секция мета-информации
 
 ```
 project: PROJECT_NAME
@@ -40,27 +41,27 @@ OTHER_FIELDS
 ---
 ```
 
-Config section with the key `project: PROJECT_NAME` and `configVersion: CONFIG_VERSION` is the meta config section. This is required section. There should be only one meta config section in a single `werf.yaml` configuration.
+Секция мета-информации, это **обязательная** секция конфигурации, содержащая ключи `project: PROJECT_NAME` и `configVersion: CONFIG_VERSION`. В каждом файле конфигурации `werf.yaml` должна быть только одна секция мета-информации.
 
-#### Project name
+#### Имя проекта
 
-`project` defines unique project name of your application. Project name affects build cache image names, Kubernetes Namespace, Helm Release name and other derived names (see [deploy to Kubernetes for detailed description]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html)). This is single required field of meta configuration.
+Ключ `project` определяет уникальное имя проекта вашего приложения. Имя проекта влияет на имена образов в сборочном кэше, namespace в Kubernetes, имя Helm-релиза и зависящие от него имена (смотри подробнее про [развертывание в Kubernetes]({{ site.baseurl }}/ru/documentation/reference/deploy_process/deploy_into_kubernetes.html)). Ключ `project` — единственное обязательное поле секции мета-информации.
 
-Project name should be unique within group of projects that shares build hosts and deployed into the same kubernetes cluster (i.e. unique across all groups within the same gitlab).
+Имя проекта должно быть уникальным в пределах группы проектов, собираемых на одном сборочном узле и развертываемых на один и тот-же кластер Kubernetes (например уникальным в пределах всех групп одного GitLab).
 
-Project name must be maximum 50 chars, only lowercase alphabetic chars, digits and dashes are allowed.
+Имя проекта должно быть не более 50 символов, содержать только строчные буквы латинского алфавита, цифры и знак дефиса.
 
-**WARNING**. You should never change project name, once it has been set up, unless you know what you are doing.
+**ВНИМАНИЕ**. Никогда не меняйте имя проекта в процессе работы, если вы не осознаете всех последствий.
 
-Changing project name leads to issues:
-1. Invalidation of build cache. New images must be built. Old images must be cleaned up from local host and docker registry manually.
-2. Creation of completely new Helm Release. So if you already had deployed your application, then changed project name and deployed it again, there will be created another instance of the same application.
+Смена имени проекта приводит к следующим проблемам:
+1. Инвалидация сборочного кэша. Все образы должны быть собранные повторно, а старые — удалены из локального хранилища или Docker registry вручную.
+2. Создание совершенно нового helm-релиза. Если вы уже развернули ваше приложение в кластере Kubernetes, смена имени проекта и повторное его развертывание приведет к созданию еще одного экземпляра приложения.
 
-Werf cannot automatically resolve project name change. Described issues must be resolved manually.
+Werf не поддерживает изменение имени проекта и все возникающие проблемы должны быть решены вручную.
 
-#### Config version
+#### Версии конфигурации
 
-The `configVersion` defines a `werf.yaml` format. It should always be `1` for now.
+Директива `configVersion` определяет формат файла `werf.yaml`. В настоящее время, это всегда — `1`.
 
 ### Image config section
 
