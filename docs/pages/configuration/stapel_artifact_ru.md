@@ -1,25 +1,25 @@
 ---
-title: Stapel artifact configuration
+title: Артефакты Stapel
 sidebar: documentation
-permalink: documentation/configuration/stapel_artifact.html
-author: Alexey Igrychev <alexey.igrychev@flant.com>
+permalink: ru/documentation/configuration/stapel_artifact.html
 ref: documentation_configuration_stapel_artifact
+lang: ru
+author: Alexey Igrychev <alexey.igrychev@flant.com>
 summary: |
   <a class="google-drawings" href="https://docs.google.com/drawings/d/e/2PACX-1vRD-K_z7KEoliEVT4GpTekCkeaFMbSPWZpZkyTDms4XLeJAWEnnj4EeAxsdwnU3OtSW_vuKxDaaFLgD/pub?w=1800&amp;h=850" data-featherlight="image">
   <img src="https://docs.google.com/drawings/d/e/2PACX-1vRD-K_z7KEoliEVT4GpTekCkeaFMbSPWZpZkyTDms4XLeJAWEnnj4EeAxsdwnU3OtSW_vuKxDaaFLgD/pub?w=640&amp;h=301">
   </a>
 ---
 
-## What is an artifact?
+## Что такое артефакты?
 
-***Artifact*** is a special image that is used by _images_ and _artifacts_ to isolate the build process and build tools resources (environments, software, data).
+***Артефакты*** — это специальный образ, используемый в других артефактах или отдельных образах, описанных в конфигурации, предназначенный преимущественно для отделения ресурсов инструментов сборки от процесса сборки образа приложения. Примерами таких ресурсов могут быть — данные или программное обеспечение, которые необходимы для сборки, но не нужны для запуска приложения, и т.п.
 
-_Artifact_ cannot be [tagged like _image_]({{ site.baseurl }}/documentation/reference/publish_process.html) and used as standalone application.
+Образ _артефакта_ нельзя [протэгировать]({{ site.baseurl }}/documentation/reference/publish_process.html) как обычный образ, и использовать как отдельное приложение.
 
-Using artifacts, you can independently assemble an unlimited number of components, and also solving the following problems:
-
-- The application can consist of a set of components, and each has its dependencies. With a standard assembly, you should rebuild all every time, but you want to assemble each one on-demand.
-- Components need to be assembled in other environments.
+Используя артефакты, вы можете собирать неограниченное количество компонентов, что позволяет решать, например, следующие задачи:
+- Если приложение состоит из набора компонент, каждый со своими зависимостями от других компонент, то обычно вам приходится пересобирать все компоненты каждый раз. Вам бы хотелось пересобирать только те компоненты, которым это действительно нужно.
+- Компоненты должны быть собраны в разных окружениях.
 
 Importing _resources_ from _artifacts_ are described in [import directive]({{ site.baseurl }}/documentation/configuration/stapel_image/import_directive.html) in _destination image_ config section ([_image_]({{ site.baseurl }}/documentation/configuration/introduction.html#image-config-section) or [_artifact_]({{ site.baseurl }}/documentation/configuration/introduction.html#artifact-config-section)).
 

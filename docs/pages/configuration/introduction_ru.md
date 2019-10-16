@@ -63,11 +63,11 @@ Werf не поддерживает изменение имени проекта 
 
 Директива `configVersion` определяет формат файла `werf.yaml`. В настоящее время, это всегда — `1`.
 
-### Image config section
+### Секция образа
 
-Each image config section defines instructions to build one independent docker image. There may be multiple image config sections defined in the same `werf.yaml` config to build multiple images.
+В каждой секции образа содержатся инструкции, описывающие правила сборки одного независимого образа. В одном файле конфигурации `werf.yaml` может быть несколько секций образов.
 
-Config section with the key `image: IMAGE_NAME` is the image config section. `image` defines short name of the docker image to be built. This name must be unique in a single `werf.yaml` config.
+Секция образа определяется по наличию в секции конфигурации ключа `image: IMAGE_NAME`, где `IMAGE_NAME` — короткое имя Docker-образа. Это имя должно быть уникальным в пределах одного файла конфигурации `werf.yaml`.
 
 ```
 image: IMAGE_NAME_1
@@ -82,17 +82,17 @@ image: IMAGE_NAME_N
 OTHER_FIELDS
 ```
 
-### Artifact config section
+### Секция артефакта
 
-Artifact config section also defines instructions to build one independent artifact docker image. Arifact is a secondary image aimed to isolate a build process and build tools resources (environments, software, data, see [artifacts article for the details]({{ site.baseurl }}/documentation/configuration/stapel_artifact.html)). There may be multiple artifact config sections for multiple artifact config sections defined in the same `werf.yaml` config.
+Секция артефакта также содержит инструкции, описывающие правила сборки одного независимого образа артефактов. Образ артефакта — это вспомогательный образ, предназначенный для отделения ресурсов инструментов сборки от процесса сборки конечного образа приложения. Такими ресурсами могут быть — окружения, программное обеспечение, данные и т д., смотри [подробнее]({{ site.baseurl }}/ru/documentation/configuration/stapel_artifact.html)). В одном файле конфигурации `werf.yaml` может быть несколько секций артефактов.
 
-Config section with the key `artifact: IMAGE_NAME` is the artifact config section. `artifact` defines short name of the artifact to be referred to from another config sections. This name must be unique in a single `werf.yaml` config.
+Секция артефакта определяется по наличию в секции конфигурации ключа `artifact: IMAGE_NAME`, где `IMAGE_NAME` — короткое имя Docker-образа, на которе можно ссылаться из других секций конфигурации. Это имя должно быть уникальным в пределах одного файла конфигурации `werf.yaml`.
 
-### Minimal config example
+### Пример минимальной конфигурации
 
-Currently Werf requires to define meta config section and at least one image config section. Image config sections will be fully optional soon.
+В настоящий момент, Werf требует определения секции мета-информации в конфигурации и как минимум одной секции образа. В будущем, требование наличия как минимум одной секции образа будет снято.
 
-Example of minimal werf config:
+Пример минимальной конфигурации Werf:
 
 ```yaml
 project: my-project
@@ -102,13 +102,13 @@ image: ~
 from: alpine:latest
 ```
 
-## Organizing configuration
+## Возможности по организации конфигурации
 
-Part of the configuration can be moved in ***separate template files*** and then included into __werf.yaml__. _Template files_ should live in the ***.werf*** directory with **.tmpl** extension (any nesting is supported).
+Часть конфигурации может быть вынесена в ***отдельные файлы шаблонов*** и затем включаться в __werf.yaml__. _Файлы шаблонов_ должны размещаться в папке ***.werf*** и иметь расширение **.tmpl** (поддерживается вложенность).
 
-> **Tip:** templates can be generated or downloaded before running werf. For example, for sharing common logic between projects.
+> **Совет:** вы можете скачать или сгенерировать шаблоны до непосредственного запуска Werf. Например это может быть удобно при вынесении общей логики нескольких проектов в общие шаблоны.
 
-Werf parses all files in one environment, thus described [define](#include) of one _template file_ becomes available in other files, including _werf.yaml_.
+Werf обрабатывает все файлы в одном окружении, поэтому [описанное](#include) в одном шаблоне, доступно из другого, включая сам _werf.yaml_.
 
 <div class="details active">
 <a href="javascript:void(0)" class="details__summary">werf.yaml</a>
@@ -199,9 +199,9 @@ ansible:
 </div>
 </div>
 
-> If there are templates with the same name werf will use template defined in _werf.yaml_ or the latest described in _templates files_.
+> При существовании нескольких шаблонов с одинаковым именем, Werf будет использовать шаблон определенный в _werf.yaml_, либо последний описанный в _файлах шаблонов_.
 
-If need to use the whole _template file_, use template file path relative to _.werf_ directory as a template name in [include](#include) function.
+Если нужно обратиться непосредственно к _файлу шаблона_, например в функции [include](#include), то можно использовать путь к соответствующему файлу относительно папки _.werf_.
 
 <div class="details active">
 <a href="javascript:void(0)" class="details__summary">werf.yaml</a>
@@ -284,23 +284,23 @@ shell:
 </div>
 </div>
 
-## Processing of config
+## Работа с конфигурацией
 
-The following steps could describe the processing of a YAML configuration file:
-1. Reading `werf.yaml` and extra templates from `.werf` directory;
-2. Executing Go templates;
-3. Saving dump into `.werf.render.yaml` (that file will remain after build and will be available until next render);
-4. Splitting rendered YAML file into separate config sections (part of YAML stream separated by three hyphens, https://yaml.org/spec/1.2/spec.html#id2800132);
-5. Validating each config section:
-  * Validating YAML syntax (you could read YAML reference [here](http://yaml.org/refcard.html)).
-  * Validating werf syntax.
-6. Generating a set of images.
+Следующие шаги описывают как происходит работа с YAML-файлами конфигурации:
+1. Чтение файла `werf.yaml` и файлов шаблонов из папки `.werf`;
+2. Выполнение Go-шаблонов;
+3. Сохранение дампа получившегося после применения Go-шаблонов (отрендеренного) файла в `.werf.render.yaml` (этот файл остается после окончания процесса сборки, до момента следующего запуска сборки);
+4. Разделение отрендеренного YAML-файла по описанным в нем секциям конфигурации (они отделяются друг от друга тремя дефисами, смотри подробнее [спецификацию](https://yaml.org/spec/1.2/spec.html#id2800132));
+5. Валидация каждой секции конфигурации:
+  * Валидация YAML-синтаксиса (смотрите подробнее [здесь](http://yaml.org/refcard.html)).
+  * Валидация Werf-синтаксиса.
+6. Генерация описанных в файле конфигурации образов.
 
-### Go templates
+### Шаблоны Go
 
-Go templates are available within YAML configuration. The following functions are supported:
+В конфигурации возможно использование шаблонов Go (Go templates). Поддерживаются следующие функции:
 
-* [Built-in Go template functions](https://golang.org/pkg/text/template/#hdr-Functions) and other language features. E.g. using common variable:<a id="go-templates" href="#go-templates" class="anchorjs-link " aria-label="Anchor link for: go templates" data-anchorjs-icon=""></a>
+* [Встроенные функции шаблонов Go](https://golang.org/pkg/text/template/#hdr-Functions) и некоторые особенности языка, такие как, например, использование переменных:<a id="go-templates" href="#go-templates" class="anchorjs-link " aria-label="Anchor link for: go templates" data-anchorjs-icon=""></a>
 
   {% raw %}
   ```yaml
@@ -318,7 +318,7 @@ Go templates are available within YAML configuration. The following functions ar
   ```
   {% endraw %}
 
-* [Sprig functions](http://masterminds.github.io/sprig/). E.g. using environment variable:<a id="sprig-functions" href="#sprig-functions" class="anchorjs-link " aria-label="Anchor link for: sprig functions" data-anchorjs-icon=""></a>
+* [Sprig-функции](http://masterminds.github.io/sprig/). Пример использования переменных окружения:<a id="sprig-functions" href="#sprig-functions" class="anchorjs-link " aria-label="Anchor link for: sprig functions" data-anchorjs-icon=""></a>
 
   {% raw %}
   ```yaml
@@ -342,7 +342,7 @@ Go templates are available within YAML configuration. The following functions ar
   ```
   {% endraw %}
 
-* `include` function with `define` for reusing configs:<a id="include" href="#include" class="anchorjs-link " aria-label="Anchor link for: include" data-anchorjs-icon=""></a>
+* Функция `include` и конструкция `define`, для переиспользования частей конфигурации:<a id="include" href="#include" class="anchorjs-link " aria-label="Anchor link for: include" data-anchorjs-icon=""></a>
 
   {% raw %}
   ```yaml
@@ -380,7 +380,7 @@ Go templates are available within YAML configuration. The following functions ar
   ```
   {% endraw %}
 
-* `.Files.Get` function for getting project file content:<a id="files-get" href="#files-get" class="anchorjs-link " aria-label="Anchor link for: .Files.Get" data-anchorjs-icon=""></a>
+* Функция `.Files.Get` для получения содержимого какого-либо файла проекта:<a id="files-get" href="#files-get" class="anchorjs-link " aria-label="Anchor link for: .Files.Get" data-anchorjs-icon=""></a>
 
   {% raw %}
   ```yaml
