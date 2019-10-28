@@ -3,6 +3,7 @@ package stage
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -184,7 +185,7 @@ func (s *BaseStage) getServiceMountsFromConfig() map[string][]string {
 			continue
 		}
 
-		mountpoint := filepath.Clean(mountCfg.To)
+		mountpoint := path.Clean(mountCfg.To)
 		mountpointsByType[mountCfg.Type] = append(mountpointsByType[mountCfg.Type], mountpoint)
 	}
 
@@ -194,7 +195,7 @@ func (s *BaseStage) getServiceMountsFromConfig() map[string][]string {
 func (s *BaseStage) addServiceMountsVolumes(mountpointsByType map[string][]string, image imagePkg.ImageInterface) error {
 	for mountType, mountpoints := range mountpointsByType {
 		for _, mountpoint := range mountpoints {
-			absoluteMountpoint := filepath.Join("/", mountpoint)
+			absoluteMountpoint := path.Join("/", mountpoint)
 
 			var absoluteFrom string
 			switch mountType {
