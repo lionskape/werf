@@ -353,12 +353,12 @@ func (gp *GitMapping) baseApplyPatchCommand(fromCommit, toCommit string, prevBui
 			targetDir := p
 
 			for {
-				targetDir = filepath.Dir(targetDir)
+				targetDir = path.Dir(targetDir)
 				if targetDir == "." {
 					continue getPathsLoop
 				}
 
-				partsCount := len(strings.Split(targetDir, string(os.PathSeparator)))
+				partsCount := len(strings.Split(targetDir, "/"))
 
 				paths, exist := changedRelDirsByLevel[partsCount]
 				if !exist {
