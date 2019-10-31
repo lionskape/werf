@@ -13,27 +13,27 @@ summary: |
 
 ## Что такое артефакты?
 
-***Артефакты*** — это специальный образ, используемый в других артефактах или отдельных образах, описанных в конфигурации, предназначенный преимущественно для отделения ресурсов инструментов сборки от процесса сборки образа приложения. Примерами таких ресурсов могут быть — данные или программное обеспечение, которые необходимы для сборки, но не нужны для запуска приложения, и т.п.
+***Артефакты*** — это специальный образ, используемый в других артефактах или отдельных образах, описанных в конфигурации. Артефакт предназначен преимущественно для отделения ресурсов инструментов сборки от процесса сборки образа приложения. Примерами таких ресурсов могут быть — программное обеспечение или данные, которые необходимы для сборки, но не нужны для запуска приложения, и т.п.
 
 Образ _артефакта_ нельзя [протэгировать]({{ site.baseurl }}/documentation/reference/publish_process.html) как обычный образ, и использовать как отдельное приложение.
 
 Используя артефакты, вы можете собирать неограниченное количество компонентов, что позволяет решать, например, следующие задачи:
-- Если приложение состоит из набора компонент, каждый со своими зависимостями от других компонент, то обычно вам приходится пересобирать все компоненты каждый раз. Вам бы хотелось пересобирать только те компоненты, которым это действительно нужно.
+- Если приложение состоит из набора компонент, каждый со своими зависимостями, то обычно вам приходится пересобирать все компоненты каждый раз. Вам бы хотелось пересобирать только те компоненты, которым это действительно нужно.
 - Компоненты должны быть собраны в разных окружениях.
 
-Importing _resources_ from _artifacts_ are described in [import directive]({{ site.baseurl }}/documentation/configuration/stapel_image/import_directive.html) in _destination image_ config section ([_image_]({{ site.baseurl }}/documentation/configuration/introduction.html#image-config-section) or [_artifact_]({{ site.baseurl }}/documentation/configuration/introduction.html#artifact-config-section)).
+Импортирование _ресурсов_ из _артефактов_ указывается с помощью [директивы import]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/import_directive.html) в конфигурации в [_секции образа_]({{ site.baseurl }}/documentation/configuration/introduction.html#секция-образа) или [_секции артефакта_]({{ site.baseurl }}/documentation/configuration/introduction.html#секция-артефакта)).
 
-## Configuration
+## Конфигурация
 
-The configuration of the _artifact_ is not much different from the configuration of _image_. Each _artifact_ should be described in a separate [artifact config section]({{ site.baseurl }}/documentation/configuration/introduction.html#artifact-config-section).
+Конфигурация _артефакта_ похожа на конфигурацию обычного _образа_. Каждый _артефакт_ должен быть описан в своей [секции]({{ site.baseurl }}/documentation/configuration/introduction.html#artifact-config-section) конфигурации.
 
-The instructions associated with the _from stage_, namely the [_base image_]({{ site.baseurl }}/documentation/configuration/stapel_image/base_image.html) and [mounts]({{ site.baseurl }}/documentation/configuration/stapel_image/mount_directive.html), and also [imports]({{ site.baseurl }}/documentation/configuration/stapel_image/import_directive.html) remain unchanged.
+Инструкции, связанные со стадией _from_ (инструкции указания [базового образа]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/base_image.html) и [монтирования]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/mount_directive.html)), а также инструкции [импорта]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/import_directive.html) точно такие же как и при описании _образа_.
 
-The _docker_instructions stage_ and the [corresponding instructions]({{ site.baseurl }}/documentation/configuration/stapel_image/docker_directive.html) are not supported for the _artifact_. An _artifact_ is an assembly tool and only the data stored in it is required.
+Стадия добавления инструкций Docker (`docker_instructions`) и [соответствующие директивы]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/docker_directive.html) не доступны при описании _артефактов_. _Артефакт_ — это инструмент сборки, и все что от него требуется, это — только данные.
 
-The remaining _stages_ and instructions are considered further separately.
+Остальные _стадии_ и инструкции описания артефактов рассматриваются далее подробно.
 
-### Naming
+### Именование
 
 <div class="summary" markdown="1">
 ```yaml
@@ -41,13 +41,14 @@ artifact: <artifact name>
 ```
 </div>
 
-_Artifact images_ are declared with `artifact` directive: `artifact: <artifact name>`. Unlike the [naming of the _image_]({{ site.baseurl }}/documentation/configuration/stapel_image/naming.html), the artifact has no limitations associated with docker naming convention, as used only internal.
+_Образ артефакта_ объявляется с помощью директивы `artifact`. Синтаксис: `artifact: <artifact name>`. Так как артефакты используются только самим Werf, отсутствуют какие-либо ограничения на именование артефактов, в отличие от ограничений на [именование обычных _образов_]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/naming.html).
 
+Пример:
 ```yaml
 artifact: "application assets"
 ```
 
-### Adding source code from git repositories
+### Добавление исходного кода из git-репозиториев
 
 <div class="summary">
 
@@ -57,13 +58,13 @@ artifact: "application assets"
 
 </div>
 
-Unlike with _image_, _artifact stage conveyor_ has no _gitCache_ and _gitLatestPatch_ stages.
+В отличие от обычных _образов_, у _конвеера стадий артефактов_ нет стадий _gitCache_ и _gitLatestPatch_.
 
-> Werf implements optional dependence on changes in git repositories for _artifacts_. Thus, by default werf ignores them and _artifact image_ is cached after the first assembly, but you can specify any dependencies for assembly instructions.
+> В Werf для _артефактов_ реализована необязательная зависимость от изменений в git-репозиториях. Таким образом, по умолчанию Werf игнорирует какие-либо изменения в git-репозитории, кэшируея образ после первой сборки. Но вы можете определить зависимости от файлов и папов, при изменениях в которых образ артефакта будет пересобираться.
 
-Read about working with _git repositories_ in the corresponding [article]({{ site.baseurl }}/documentation/configuration/stapel_image/git_directive.html).
+Читайте подробнее про работу с _git-репозиториями_ в соответствующей [статье]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/git_directive.html).
 
-### Running assembly instructions
+### Запуск инструкций сборкиRunning assembly instructions
 
 <div class="summary">
 
@@ -73,11 +74,11 @@ Read about working with _git repositories_ in the corresponding [article]({{ sit
 
 </div>
 
-Directives and _user stages_ remain unchanged: _beforeInstall_, _install_, _beforeSetup_ and _setup_.
+У артефактов точно такое же как и у обычных образов использование директив и пользовательских стадий — _beforeInstall_, _install_, _beforeSetup_ и _setup_.
 
-If there are no dependencies on files specified in git `stageDependencies` directive for _user stages_, the image is cached after the first build and will no longer be reassembled while the related _stages_ exist in _stages storage_.
+ Если в директиве `stageDependencies` в блоке git для _пользовательской стадии_ не указана зависимость от каких-либо файлов, то образ кэшируется после первой сборки и не будет повторно собираться пока соответствующая _стадия_ находится в _кэше стадий_.
 
-> If the artifact should be rebuilt on any change in the related git repository, you should specify the _stageDependency_ `**/*` for any _user stage_, e.g., for _install stage_:
+> Если необходимо повторно собирать артефакт при любых изменениях в git, нужно указать _stageDependency_ `**/*` для соответствующей _пользовательской_ стадии. Пример для стадии _install_:
 ```yaml
 git:
 - to: /
@@ -85,9 +86,9 @@ git:
     install: "**/*"
 ```
 
-Read about working with _assembly instructions_ in the corresponding [article]({{ site.baseurl }}/documentation/configuration/stapel_image/assembly_instructions.html).
+Читайте подробнее про работу с _инструкциями сборки_ в соответствующей [статье]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/assembly_instructions.html).
 
-## All directives
+## Все директивы
 ```yaml
 artifact: <artifact_name>
 from: <image>
@@ -102,8 +103,8 @@ git:
   owner: <owner>
   group: <group>
   includePaths:
+   excludePaths:
   - <path or glob relative to path in add>
-  excludePaths:
   - <path or glob relative to path in add>
   stageDependencies:
     install:
@@ -183,17 +184,15 @@ import:
 asLayers: <bool>
 ```
 
-## Using artifacts
+## Использование артефактов
 
-Unlike [*stapel image*]({{ site.baseurl }}/documentation/configuration/stapel_image/assembly_instructions.html), *stapel artifact* does not have a git latest patch stage.
+В отличие от [*обычного образа*]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/assembly_instructions.html), у *образа артефакта* нет стадии _git latest patch_. Это сделано намеренно, т.к. стадия _git latest patch_ выполняется обычно при каждом коммите, применяя появившиеся изменения к файлам. Однако, *артефакт* рекомендуется использовать как образ с высокой вероятностью кэширования, который обновляется редко или не часто (например, при изменении специальных файлов).
 
-Git latest patch stage is supposed to be updated on every commit, which brings new changes to files. *Stapel artifact* though is recommended to be used as a deeply cached image, which will be updated in rare cases, when some special files changed.
+Пример: нужно импортировать в артефакт данные из git, и пересобирать ассеты только тогда, когда влияюшие на сборку ассетов файлы — меняются. Т.е. в случае, изменения каких-либо других файлов в git, ассеты пересобираться не должны.
 
-For example: import git into *stapel artifact* and rebuild assets in this artifact only when dependent assets files in git has changes. For every other change in git where non-dependent files has been changed assets will not be rebuilt.
+Конечно существуют случаи, когда необходимо включать изменения любых файлов git-репозитория в _образ артефакта_ (например если в артефакте происходит сборка приложения на Go). В этом случае необходимо указать зависимость относительно стадии (сборку которой необходимо выполнять при изменения в git) с помощью `git.stageDependencies` и `*` в качестве шаблона. Пример:
 
-However in the case when there is a need to bring changes of any git files into *stapel artifact* (to build golang application for example) user should define `git.stageDependencies` of some stage that needs these files explicitly as `*` pattern:
-
-```
+```yaml
 git:
 - add: /
   to: /app
@@ -202,6 +201,6 @@ git:
     - "*"
 ```
 
-In this case every change in git files will result in artifact rebuild, all *stapel images* that import this artifact will also be rebuilt.
+В этом случае, любые изменения файлов в git-репозитории будут приводить к пересборке _образа артефакта_, и всех _образов_, в которых определен импорт этого артефакта.
 
-**NOTE** User should employ multiple separate `git.add` directive invocations in every [*stapel image*]({{ site.baseurl }}/documentation/configuration/stapel_image/assembly_instructions.html) and *stapel artifact* that needs git files — it is an optimal way to add git files into any image. Adding git files to artifact and then importing it into image using `import` directive is not recommended.
+**Замечание:** Если вы используете какие-либо файлы и при сборке _артефакта_ и при сборке [*обычного образа*]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/assembly_instructions.html), правильный путь — это использовать директиву `git.add` при описании каждого образа где это необходимо, т.е. несколько раз. **Не рекомендуемый** вариант — это добавить файлы при сборке артефакта, а потом импортировать их используя директиву `import` в другой образ.
