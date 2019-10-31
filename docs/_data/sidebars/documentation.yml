@@ -347,7 +347,7 @@ entries:
               - title: Импортирование из артефактов и образов
                 url: /ru/documentation/configuration/stapel_image/import_directive.html
 
-              - title: Итоговый список директив
+              - title: Полный список директив
                 url: /ru/documentation/configuration/stapel_image/image_directives.html
 
           - title: Артефакты Stapel

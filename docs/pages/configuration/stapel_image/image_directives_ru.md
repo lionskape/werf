@@ -1,8 +1,9 @@
 ---
-title: All directives
+title: Полный список директив
 sidebar: documentation
-permalink: documentation/configuration/stapel_image/image_directives.html
+permalink: ru/documentation/configuration/stapel_image/image_directives.html
 ref: documentation_configuration_stapel_image_image_directives
+lang: ru
 author: Alexey Igrychev <alexey.igrychev@flant.com>
 ---
 
