@@ -18,8 +18,7 @@ summary: |
   </div>
 ---
 
-Here's a minimal `werf.yaml`. It describes a _image_ named `example` that is based on a _base image_ named `alpine`:
-
+Пример минимального `werf.yaml`:
 ```yaml
 project: my-project
 configVersion: 1
@@ -28,45 +27,43 @@ image: example
 from: alpine
 ```
 
-_Base image_ can be declared with `from`, `fromImage` or `fromImageArtifact` directive.
+Приведенная конфигурация описывает _образ_ `example`, _базовым образом_ для которого является образ с именем `alpine`.
+
+_Базовый образ_ может быть указан с помощью директив `from`, `fromImage` или `fromImageArtifact`.
 
 ## from, fromLatest
 
-The `from` directive defines the name and tag of a _base image_. If absent, tag defaults to `latest`.
+Директива `from` определяет имя и тэг _базового образа_. Если тэг не указан, то по умолчанию это — `latest`.
 
 ```yaml
 from: <image>[:<tag>]
 ```
 
-By default, the assembly process does not depend on actual _base image_ digest in the repository, only on _from_ directive value.
-Thus, changing _base image_ locally or in the repository does not matter if _from_ stage is already exists in _stages storage_.
+По умолчанию, процесс борки не зависит от digest'а _базового образа_, а зависит только от значения директивы `from`.  Поэтому, изменение _базового образа_ в локальном хранилище или в Docker registry не будет влиять не сборку, пока стадия _from_ с указанным значением образа находится в _кэше стадий_.
 
-If you want always build the image with actual _base image_ you should use _fromLatest_ directive.
-_fromLatest_ directive allows connecting the assembly process with the _base image_ digest getting from the repository.
+Если же вам нужна проверка digest образа, чтобы всегда использовать актуальный _базовый образ_, вы можете использовать директиву `fromLatest`. Это приведет к тому, чтобы при сборке всегда будет осуществляться соединение с хранилищем или Docker registry для получения актуального digest _базового образа_.
+
+Пример использования директивы `fromLatest`:
 ```yaml
 fromLatest: true
 ```
 
-> Pay attention, werf uses actual _base image_ digest as extra _from_ stage dependency if _fromLatest_ is true.
-Therefore, using this directive implies not reproducible signatures:
-after changing _base image_ in repository, all previously built stages, also like related images, become not usable.
-The problem might occur:
-- between jobs of one pipeline (e.g. build and deploy) or
-- when you rerun the previous job (e.g. deploy)
+> Обратите внимание, что если вы включаете _fromLatest_, то Werf использует digest актуального _базового образа_ при подсчете сигнатуры стадии _from_. Это может приводить к неожиданным сменам сигнатур стадий, что как следствие приводит к тому, что после смены _базового образа_ все собранные ранее зависимые образы становятся недоступны при сборке. Примеры проблем, которые это поведение может вызвать при CI процессах (например — pipeline GitLab):
+- сборка прошла успешно, но затем обновляется _базовый образ_ и следующие задания pipeline (например деплой) уже не работают (собранного конечного образа, с учетом обновленного _базового образа_ не существует)
+- собранное приложение успешно задеплоено, но затем обновляется _базовый образ_ и повторный запуск задания деплоя уже не работает (собранного конечного образа, с учетом обновленного _базового образа_ не существует)
 
 ## fromImage and fromImageArtifact
 
-Besides using docker image from a repository, the _base image_ can refer to _image_ or [_artifact_]({{ site.baseurl }}/documentation/configuration/stapel_artifact.html), that is described in the same `werf.yaml`.
+В качестве _базового образа_ можно указывать не только образ из локального хранилища или Docker registry, но и имя другого _образа_ или [_артефакта_]({{ site.baseurl }}/documentation/configuration/stapel_artifact.html), описанного в том-же файле `werf.yaml`. В этом случае необходимо использовать директивы `fromImage` и `fromImageArtifact` соответственно.
 
 ```yaml
 fromImage: <image name>
 fromImageArtifact: <artifact name>
 ```
 
-If a _base image_ is specific to a particular application,
-it is reasonable to store its description with _images_ and _artifacts_ which are used it as opposed to storing the _base image_ in a registry.
+Если _базовый образ_ уникален для конкретного приложения, то рекомендуемый способ — хранить его описание в конфигурации приложения (в файле `werf.yaml`) как отдельный _образ_ или _артефакт_, вместо того, чтобы ссылаться на Docker-образ.
 
-Also, this method can be useful if the stages of _stage conveyor_ are not enough for building the image. You can design your _stage conveyor_.
+Также, эта рекомендация будет полезной, если вам по каким-либо причинам не хватает существующих стадий _конвейера стадий_. Используя в качестве _базового образа_ образ, описанный в том-же `werf.yaml` вы по сути можете построить свой конвейер стадий.
 
 <a class="google-drawings" href="https://docs.google.com/drawings/d/e/2PACX-1vTmQBPjB6p_LUpwiae09d_Jp0JoS6koTTbCwKXfBBAYne9KCOx2CvcM6DuD9pnopdeHF--LPpxJJFhB/pub?w=1629&amp;h=1435" data-featherlight="image">
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vTmQBPjB6p_LUpwiae09d_Jp0JoS6koTTbCwKXfBBAYne9KCOx2CvcM6DuD9pnopdeHF--LPpxJJFhB/pub?w=850&amp;h=673">
@@ -74,7 +71,9 @@ Also, this method can be useful if the stages of _stage conveyor_ are not enough
 
 ## fromCacheVersion
 
-The `fromCacheVersion` directive allows to manage image reassembly.
+Как описано выше, в обычном случае процесс сборки активно использует кэширование. При сборке выполняется проверка — изменился ли _базовый образ_ (в зависимости от используемых директив это проверка на изменение digest или имени и тэга образа). Если образ не изменился, то сигнатура стадии `from` остается прежней, и если в кэше стадий есть образ с такой сигнатурой, то он и будет использован при сборке.
+
+С помощью директивы `fromCacheVersion` вы можете влиять на сигнатуру стадии `from` (т.к. значение `fromCacheVersion` — это часть сигнатуры стадии), и таким образом управлять принудительной сборкой всего образа. Если вы измените значение, указанное в директиве `fromCacheVersion`, то независимо от того, менялся ли _базовый образ_ (или его digest) или он остался прежним, при сборке изменится сигнатура стадии `from` и соответственно всех следующих стадий. Это приведет к тому, что сборка всех стадий будет выполнена повторно.
 
 ```yaml
 fromCacheVersion: <arbitrary string>
