@@ -27,24 +27,24 @@ summary: |
     <span class="na">HEALTHCHECK</span><span class="pi">:</span> <span class="s">&lt;healthcheck&gt;</span></code></pre></div></div>
 ---
 
-Docker can build images by [Dockerfile](https://docs.docker.com/engine/reference/builder/) instructions. These instructions can be divided into two groups: build-time instructions and other instructions that effect on an image manifest.  
+Docker может собирать образы используя инструкции в [Dockerfile](https://docs.docker.com/engine/reference/builder/), которые можно разделить на две группы: инструкции сборки, и другие инструкции, которые влияют на manifest Docker-образа.
 
-Build-time instructions do not make sense in a werf build process. Therefore, werf supports only following instructions:
+Werf поддерживает некоторые инструкции Dockerfile, кроме инструкций сборки, а именно:
 
-* `USER` to set the user and the group to use when running the image (read more [here](https://docs.docker.com/engine/reference/builder/#user)).
-* `WORKDIR` to set the working directory (read more [here](https://docs.docker.com/engine/reference/builder/#workdir)).
-* `VOLUME` to add mount point (read more [here](https://docs.docker.com/engine/reference/builder/#volume)).
-* `ENV` to set the environment variable (read more [here](https://docs.docker.com/engine/reference/builder/#env)).
-* `LABEL` to add metadata to an image (read more [here](https://docs.docker.com/engine/reference/builder/#label)).
-* `EXPOSE` to inform Docker that the container listens on the specified network ports at runtime (read more [here](https://docs.docker.com/engine/reference/builder/#expose))
-* `ENTRYPOINT` to configure a container that will run as an executable (read more [here](https://docs.docker.com/engine/reference/builder/#entrypoint)).
-* `CMD` to provide default arguments for the `ENTRYPOINT` to configure a container that will run as an executable (read more [here](https://docs.docker.com/engine/reference/builder/#cmd)).
-* `STOPSIGNAL` to set the system call signal that will be sent to the container to exit (read more [here](https://docs.docker.com/engine/reference/builder/#stopsignal))
-* `HEALTHCHECK` to tell Docker how to test a container to check that it is still working (read more [here](https://docs.docker.com/engine/reference/builder/#healthcheck))
+* `USER` пользователь и группа, которые необходимо использовать при запуске контейнера ([подробнее](https://docs.docker.com/engine/reference/builder/#user))
+* `WORKDIR` рабочая директория при запуске контейнера ([подробнее](https://docs.docker.com/engine/reference/builder/#workdir))
+* `VOLUME` определяет точку монтирования ([подробнее](https://docs.docker.com/engine/reference/builder/#volume))
+* `ENV` устанавливает переменные окружения ([подробнее](https://docs.docker.com/engine/reference/builder/#env))
+* `LABEL` добавляет метаданные к образу ([подробнее](https://docs.docker.com/engine/reference/builder/#label))
+* `EXPOSE` указывает, какие сетевые порты будут прослушиваться в запущенном контейнере ([подробнее](https://docs.docker.com/engine/reference/builder/#expose))
+* `ENTRYPOINT` задает команду по умолчанию, которая будет выполнена при запуске контейнера ([подробнее](https://docs.docker.com/engine/reference/builder/#entrypoint))
+* `CMD` задает аргументы по умолчанию для `ENTRYPOINT` ([подробнее](https://docs.docker.com/engine/reference/builder/#cmd))
+* `STOPSIGNAL` определяет системный сигнал, который будет использоваться при остановке контейнера ([подробнее](https://docs.docker.com/engine/reference/builder/#stopsignal))
+* `HEALTHCHECK` определяет инструкции, которые Docker может использовать для проверки работоспособности запущенного контейнера ([подробнее](https://docs.docker.com/engine/reference/builder/#healthcheck))
 
-These instructions can be specified in the `docker` config directive.
+Эти инструкции могут быть указаны с помощью директивы `docker` в конфигурации.
 
-Here is an example of using docker instructions:
+Пример:
 
 ```yaml
 docker:
@@ -56,9 +56,8 @@ docker:
     LC_ALL: en_US.UTF-8
 ```
 
-Defined docker instructions are applied on the last stage called `docker_instructions`.
-Thus, instructions do not affect other stages, ones just will be applied to a built image.
+Docker-инструкции указанные в конфигурации применяются на последней стадии конвейера стадий, — стадии `docker_instructions`. Поэтому, указание Docker-инструкций в `werf.yaml` никак не влияет на сам процесс сборки, а только добавляет данные к уже собранному образу.
 
-If need to use special environment variables in build-time of your application image, such as `TERM` environment, you should use a [base image]({{ site.baseurl }}/documentation/configuration/stapel_image/base_image.html) with these variables.
+Если вам необходимо устанавливать какие-либо переменные окружения во время сборки, например установить переменную окружения `TERM`, — вам необходимо использовать [базовый образ]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/base_image.html) в котором устанавливать необходимые переменные окружения.
 
-> Tip: you can also implement exporting environment variables right in [_user stage_]({{ site.baseurl }}/documentation/configuration/stapel_image/assembly_instructions.html#what-is-user-stages) instructions
+> Совет: Если вам необходимо устанавливать какие-либо переменные окружения во время сборки, вы также можете экспортировать их в [_пользовательской стадии_]({{ site.baseurl }}/documentation/configuration/stapel_image/assembly_instructions.html#what-is-user-stages).

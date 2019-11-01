@@ -60,18 +60,17 @@ summary: |
   </div>
 ---
 
-## What is git mapping?
+## Что такое git-маппинг?
 
-***Git mapping*** describes a file or directory from the git repository that should be added to the image by a specific path. The repository may be a local one, hosted in the directory that contains the config, or a remote one, and in this case, the configuration of the _git mapping_ contains the repository address and the version (branch, tag or commit hash).
+***Git-маппинг*** определяет, какой файл или папка из git-репозитория должны быть добавлены в конкретное место образа. Git-репозиторий может быть как локальным репозиторием, в котором находится файл конфигурации сборки (`werf.yaml`), так и удаленным репозиторием (в этом случае указывается адрес репозитория и версия кода — ветка, тэг или конкретный коммит).
 
-Werf adds the files from the repository to the image by using the full transfer of files with git archive or by applying patches between commits.
-The full transfer is used for the initial adding of files. The subsequent builds use applying patches to reflect changes in a git repository. The algorithm behind the full transfer and applying patches is reviewed the [More details: git_archive...](#more-details-gitarchive-gitcache-gitlatestpatch) section.
+Werf добавляет файлы из git-репозитория в образ копируя их с помощью [git archive](https://git-scm.com/docs/git-archive) (при первоначальном добавлении файлов) либо накладывая git patch. При повторных сборках и появлении изменений в git-репозитории, Werf добавляет patch к собранному ранее образу — чтобы в конечном образе отразить необходимые изменения файлов и папок. Более подробно, механизм переноса файлов в образ и накладывания патчей рассматривается в соответствующей секции [далее...](#more-details-gitarchive-gitcache-gitlatestpatch)
 
-The configuration of the _git mapping_ supports filtering files, and you can use the set of _git mappings_ to create virtually any resulting file structure in the image. Also, you can specify the owner and the group of files in the _git mapping_ configuration — no subsequent `chown` required.
+Конфигурация _git-маппинга_ поддерживает фильтры, что позволяет используя необходимое количество _git_маппингов_ сформировать практически любую файловую структуру в образе. Также, вы можете указать группу и владельца конечных файлов в образе, что освобождает от необходимости делать это (`chown`) отдельной командой.
 
-Werf has support for submodules. Werf detects if files specified with _git mapping_ configuration are contained in submodules and does the very best it could to handle the changes of files in submodules correctly.
+В Werf реализована поддержка сабмодулей git (git submodules), и если Werf определяет, что какая-то часть git-маппинга является сабмодулем, то принимаются соответствующие меры, чтобы обрабатывать изменения в сабмодулях корректно.
 
-> All project's submodules locked to a specific commit, so all collaborators receive the same content. Therefore, Werf **does not initialize, update submodules** and just uses these commits
+> Все git-сабмодули проекта связаны с конкретным коммитом, поэтому все разработчики работющие с репозиторием использующим сабмодуль, получают одинаковое содержимое. Werf не инициализирует, не обновляет сабмодули, а использует соответствующие связанные коммиты.
 
 An example of a _git mapping_ configuration for adding source files from a local repository from the `/src` into the `/app` directory, and remote phantomjs source files to `/src/phantomjs`:
 
