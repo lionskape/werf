@@ -62,7 +62,7 @@ summary: |
 
 ## Что такое git-маппинг?
 
-***Git-маппинг*** определяет, какой файл или папка из git-репозитория должны быть добавлены в конкретное место образа. Git-репозиторий может быть как локальным репозиторием, в котором находится файл конфигурации сборки (`werf.yaml`), так и удаленным репозиторием (в этом случае указывается адрес репозитория и версия кода — ветка, тэг или конкретный коммит).
+***Git-маппинг*** определяет, какой файл или папка из git-репозитория должны быть добавлены в конкретное место образа. Git-репозиторий может быть как локальным репозиторием, в котором находится файл конфигурации сборки (`werf.yaml`), так и удаленным (внешним) репозиторием (в этом случае указывается адрес репозитория и версия кода — ветка, тэг или конкретный коммит).
 
 Werf добавляет файлы из git-репозитория в образ копируя их с помощью [git archive](https://git-scm.com/docs/git-archive) (при первоначальном добавлении файлов) либо накладывая git patch. При повторных сборках и появлении изменений в git-репозитории, Werf добавляет patch к собранному ранее образу — чтобы в конечном образе отразить необходимые изменения файлов и папок. Более подробно, механизм переноса файлов в образ и накладывания патчей рассматривается в соответствующей секции [далее...](#more-details-gitarchive-gitcache-gitlatestpatch)
 
@@ -70,9 +70,9 @@ Werf добавляет файлы из git-репозитория в образ
 
 В Werf реализована поддержка сабмодулей git (git submodules), и если Werf определяет, что какая-то часть git-маппинга является сабмодулем, то принимаются соответствующие меры, чтобы обрабатывать изменения в сабмодулях корректно.
 
-> Все git-сабмодули проекта связаны с конкретным коммитом, поэтому все разработчики работющие с репозиторием использующим сабмодуль, получают одинаковое содержимое. Werf не инициализирует, не обновляет сабмодули, а использует соответствующие связанные коммиты.
+> Все git-сабмодули проекта связаны с конкретным коммитом, поэтому все разработчики работающие с репозиторием использующим сабмодуль, получают одинаковое содержимое. Werf не инициализирует, не обновляет сабмодули, а использует соответствующие связанные коммиты.
 
-An example of a _git mapping_ configuration for adding source files from a local repository from the `/src` into the `/app` directory, and remote phantomjs source files to `/src/phantomjs`:
+Пример добавления файлов из папки `/src` локального git-репозитория в папку `/app` собираемого образа, и добавления кода PhantomJS из удаленного репозитория в папку `/src/phantomjs` собираемого образа:
 
 ```yaml
 git:
@@ -83,33 +83,33 @@ git:
   to: /src/phantomjs
 ```
 
-## Motivation for git mappings
+## Зачем использовать git-маппинг?
 
-The main idea is to bring git history into the build process.
+Основная идея использования git-маппинга — добавление истории к сборочному процессу.
 
-### Patching instead of copying
+### Наложение патчей вместо копирования
 
-Most commits in the real application repository relate to updating the code of the application itself. In this case, if the compilation is not required, assembling a new image shall be nothing more than applying patches to the files in the previous image.
+Большинство коммитов в репозитории реального приложения относятся к обновлению кода самого приложения. В этом случае, если компиляция приложения не требуется, то для получения нового образа достаточно применить исправления к файлам в предыдущем образе.
 
-### Remote repositories
+### Удаленные репозитории
 
-Building an application image may depend on source files in other repositories. Werf provides the ability to add files from remote repositories too. Werf can detect changes in local repositories and remote repositories.
+Сборка конечного образа может зависеть от файлов в других репозитория. Werf позволяет добавлять файлы из удаленных репозиториев, а также отслеживать их изменение.
 
-## Syntax of a git mapping
+## Синтаксис
 
-The _git mapping_ configuration for a local repository has the following parameters:
+Для добавления кода из локального git-репозитория используется следующий синтаксис:
 
-- `add` — the path to a directory or file whose contents must be copied to the image. The path is specified relative to the repository root, and the path is absolute (i.e., it must start with `/`). This parameter is optional, the content of the entire repository is transferred by default, i.e., an empty `add` is equal to `add: /`;
-- `to` — the path in the image, where the content specified with `add` will be copied;
-- `owner` — the name or uid of the owner of the copied files;
-- `group` — the name or gid of the group of the owner;
-- `excludePaths` — a set of masks to ignore the files or directories during recursive copying. Paths in masks are specified relative to add;
-- `includePaths` — a set of masks to include the files or directories during recursive copying. Paths in masks are specified relative to add;
-- `stageDependencies` — a set of masks to detect changes that lead to the user stages rebuilds. This is reviewed in detail in the [Running assembly instructions]({{ site.baseurl }}/documentation/configuration/stapel_image/assembly_instructions.html) reference.
+- `add` — (не обязательный параметр) путь к директории или файлу, содержимое которого (которой) нужно добавить в образ. Указывается абсолютный путь *относительно корня* репозитория, — т.е. он должен начинаться с `/`. По умолчанию копируется все содержимое репозитория, т.е. отсутствие параметра `add` равносильно указанию `add: /`;
+- `to` — путь внутри образа, куда будет скопировано соответствующее содержимое;
+- `owner` — имя пользователя-владельца файлов в образе;
+- `group` — имя группы-владельца файлов в образе;
+- `excludePaths` — список исключений (маска) при рекурсивном копировании файлов и папок. Указывается относительно пути, указанного в `add`;
+- `includePaths` — список масок файлов и папок для рекурсивного копирования. Указывается относительно пути, указанного в `add`;
+- `stageDependencies` — список масок файлов и папок для указания зависимости пересборки стадии от их изменений. Позволяет указать, при изменении каких файлов и папок необходимо принудительно пересобирать конкретную пользовательскую стадию. Более подробно рассматривается [здесь]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/assembly_instructions.html).
 
-The _git mapping_ configuration for a remote repository has some additional parameters:
-- `url` — remote repository address;
-- `branch`, `tag`, `commit` — a name of branch, tag or commit hash that will be used. If these parameters are not specified, the master branch is used;
+При использовании удаленных репозиториев дополнительно используются следующие параметры:
+- `url` — адрес удаленного репозитория;
+- `branch`, `tag`, `commit` — имя ветки, тэга или коммита соответственно. По умолчанию — ветка master;
 - `as` — defines an alias to simplify the retrieval of remote repository-related information in helm templates. Details are available in the [Deployment to kubernetes]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html) reference.
 
 ## Uses of git mappings

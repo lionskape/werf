@@ -338,7 +338,7 @@ entries:
               - title: Добавление исходного кода из git-репозиториев
                 url: /ru/documentation/configuration/stapel_image/git_directive.html
 
-              - title: Запус инструкций сборки
+              - title: Запуск инструкций сборки
                 url: /ru/documentation/configuration/stapel_image/assembly_instructions.html
 
               - title: Использование монтирования для уменьшения размера образа и ускорения сборки

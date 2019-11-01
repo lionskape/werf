@@ -1,5 +1,5 @@
 ---
-title: Запус инструкций сборки
+title: Запуск инструкций сборки
 sidebar: documentation
 permalink: ru/documentation/configuration/stapel_image/assembly_instructions.html
 ref: documentation_configuration_stapel_image_assembly_instructions
