@@ -101,23 +101,22 @@ git:
 
 - `add` — (не обязательный параметр) путь к директории или файлу, содержимое которого (которой) нужно добавить в образ. Указывается абсолютный путь *относительно корня* репозитория, — т.е. он должен начинаться с `/`. По умолчанию копируется все содержимое репозитория, т.е. отсутствие параметра `add` равносильно указанию `add: /`;
 - `to` — путь внутри образа, куда будет скопировано соответствующее содержимое;
-- `owner` — имя пользователя-владельца файлов в образе;
-- `group` — имя группы-владельца файлов в образе;
+- `owner` — имя или id пользователя-владельца файлов в образе;
+- `group` — имя или id группы-владельца файлов в образе;
 - `excludePaths` — список исключений (маска) при рекурсивном копировании файлов и папок. Указывается относительно пути, указанного в `add`;
 - `includePaths` — список масок файлов и папок для рекурсивного копирования. Указывается относительно пути, указанного в `add`;
 - `stageDependencies` — список масок файлов и папок для указания зависимости пересборки стадии от их изменений. Позволяет указать, при изменении каких файлов и папок необходимо принудительно пересобирать конкретную пользовательскую стадию. Более подробно рассматривается [здесь]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/assembly_instructions.html).
 
 При использовании удаленных репозиториев дополнительно используются следующие параметры:
 - `url` — адрес удаленного репозитория;
-- `branch`, `tag`, `commit` — имя ветки, тэга или коммита соответственно. По умолчанию — ветка master;
-- `as` — defines an alias to simplify the retrieval of remote repository-related information in helm templates. Details are available in the [Deployment to kubernetes]({{ site.baseurl }}/documentation/reference/deploy_process/deploy_into_kubernetes.html) reference.
+- `branch`, `tag`, `commit` — имя ветки, тэга или коммита соответственно. По умолчанию — ветка master.
 
-## Uses of git mappings
+## Использование git-маппинга
 
-### Copying of directories
+### Копирование директорий
 
-The `add` parameter specifies a path in a repository, from which all files must be recursively retrieved and added to the image with the `to` path; if the parameter is not specified, then the default path — `/` is used, i.e., the entire repository is transferred.
-For example:
+Параметр `add` определяет источник, путь в git-репозитории, откуда файлы рекурсивно копируются в образ и помещаются по адресу, указанному в параметре `to`. Если параметр не определен, то по умолчанию используется значение `/`, т.е. копируется весь репозиторий.
+Пример простейшей конфигурации, добавляющей содержимое всего локального git-репозитория в образ в папку `/app`.
 
 ```yaml
 git:
@@ -125,17 +124,15 @@ git:
   to: /app
 ```
 
-This is the simple _git mapping_ configuration that adds the entire content from the repository to the `/app` directory in the image.
-
-If the repository contains the following structure:
+Если в репозитории была следующая структура файлов и папок:
 
 ![git repository files tree]({{ site.baseurl }}/images/build/git_mapping_01.png)
 
-Then the image contains this structure:
+То в образе будет следующая структура файлов и папок:
 
 ![image files tree]({{ site.baseurl }}/images/build/git_mapping_02.png)
 
-Multiple _git mappings_ may be specified:
+Вы также можете указывать несколько _git-маппингов_. Пример:
 
 ```yaml
 git:
@@ -145,23 +142,24 @@ git:
   to: /static
 ```
 
-If the repository contains the following structure:
+Если в репозитории была следующая структура файлов и папок:
 
 ![git repository files tree]({{ site.baseurl }}/images/build/git_mapping_03.png)
 
-Then the image contains this structure:
+То в образе будет следующая структура файлов и папок:
 
 ![image files tree]({{ site.baseurl }}/images/build/git_mapping_04.png)
 
-It should be noted, that _git mapping_ configuration doesn't specify a directory to be transferred like `cp -r /src /app`. `add` parameter specifies a directory content that will be recursively transferred from the repository. That is if the `/assets` directory needs to be transferred to the `/app/assets` directory, then the name **assets** should be written twice, or `includePaths` [filter](#using-filters) can be used.
+Следует отметить, что конфигурация git-маппинга не похожа например на копирование типа `cp -r / src / app`. Параметр `add` указывает *содержимое* каталога, которое будет рекурсивно копироваться из репозитория. Поэтому, если папка `/assets` со всем содержимым из репозитория должна быть скопирована в папку `/app/assets` образа, то имя *assets* вы должны указать два раза. Либо, как вариант, вы можете использовать [фильтр](#using-filters), — например параметр `includePaths`.
 
+Примеры обоих вариантов, которые вы можете использовать для достижения одинакового результата:
 ```yaml
 git:
 - add: /assets
   to: /app/assets
 ```
 
-or
+либо
 
 ```yaml
 git:
@@ -170,11 +168,11 @@ git:
   includePaths: assets
 ```
 
-> Werf has no convention for trailing `/` that is available in rsync, i.e. `add: /src` and `add: /src/` are the same.
+> В Werf нет какого-либо ограничения или соглашения на счет использования `/` в конце, как например в rsync. Т.о. `add: /src` и `add: /src/` — одно и тоже.
 
-### Copying of file
+### Копирование файла
 
-Copying the content, not the specified directory, from `add` path also applies to files. To transfer the file to the image, you must specify its name twice — once in `add`, and again in `to`. This provides an ability to rename the file:
+В случае с копированием файла (когда вы указываете в параметре `add` конкретный файл) действует тот же принцип — вы указываете в параметре `add` содержимое какого файла нужно скопировать, и в параметре `to` — название файла в образе, который будет содержать это содержимое (т.е. также два раза). Это дает вам возможнось изменять имя файла при добавлении его из git-репозитория в образ.
 
 ```yaml
 git:
@@ -182,9 +180,11 @@ git:
   to: /app/conf/production.yaml
 ```
 
-### Changing an owner
+### Изменение владельца
 
-The _git mapping_ configuration provides parameters `owner` and `group`. These are the names or numerical ids of the owner and group used for all files and directories transferred to the image.
+При добавлении файла из git-репозитория вы можете указать имя и/или группу владельца файлов в образе. Добавляемым файлам и папкам в образе после копирования будут установлены соответствующие права. Пользователь и группа могут быть указаны как именем так и чиловым id (userid, groupid).
+
+Пример использования:
 
 ```yaml
 git:
@@ -193,11 +193,13 @@ git:
   owner: www-data
 ```
 
+Если указан только параметр `owner`, как в приведенном примере, то группой-владельцем устанавливается основная группа указанного пользователя в системе.
+
+В результате, в папку `/app` образа будет добавлен файл `index.php` и ему будут установлены следующие права:
+
 ![index.php owned by www-data user and group]({{ site.baseurl }}/images/build/git_mapping_05.png)
 
-If only the `owner` parameter is specified, the group for files is the same as the primary group of the specified user.
-
-If `owner` or `group` value is a string, then the specified user or group must be added to the system by the time of the full transfer of files, otherwise, build ends with an error.
+Если значения параметра `owner` или `group` не числовые id, а текстовые (т.е. названия соответствнно пользователя и группы), то соответствующие пользователь и группа должны существовать в системе. Их нужно добавить заранее при необходимости, иначе при сборке возникнет ошибка.
 
 ```yaml
 git:
@@ -206,15 +208,17 @@ git:
   owner: wwwdata
 ```
 
+### Использование фильтров
 
+Парамеры фильтров — `includePaths` и `excludePaths` используются при составлении списка файлов для добавления. Эти параметры содержат набор путей или масок, применяемых соответственно для включения и исключения списка файлов и папок при добавлении в образ.
 
-### Using filters
+Фильтр `excludePaths` работает следующим образом: каждая маска списка применяется к каждому файлу, найденному по пути `add`. Если файл удовлетворяет хотябы одной маске, — файл исключается из списка файлов на добавление. Если файл не удовлетворяет ни одной маске — файл добавляется в образ.
 
-`includePaths` and `excludePaths` parameters are used when processing the file list. These are the sets of masks that can be used to include and exclude files and directories from/to the list of files that will be transferred to the image. Simply stated, the `excludePaths` filter works as follows: masks are applied to each file found in `add` path. If at least one mask matches, then the file is ignored; if no matches are found, then the file gets added to the image. `includePaths` works the opposite way: if at least one mask is a match, the file gets added to the image.
+Фильтр `includePaths` работает наоборот — если файл удовлетворяет хотябы одной маске, — файл добавляется в образ.
 
-_Git mapping_ configuration can contain both filters. In this case, a file is added to the image if the path matches with one of `includePaths` masks and not match with all `excludePaths` masks.
+Конфигурация _Git-маппинга_ может содержать оба Фильтра. В этом случае файл добавляется в образ если его путь удовлетворяет хотябы одной маске `includePaths` и не удовлетворяет ни одной маске `excludePaths`.
 
-For example:
+Пример:
 
 ```yaml
 git:
@@ -228,50 +232,49 @@ git:
   - '**/*-test.*'
 ```
 
-This is the git mapping configuration that adds `.php` and `.js` files from `/src` except files with suffixes that starts with `-dev.` or `-test.`.
+В приведенном примере добавляются `.php` и `.js` файлы из папки  `/src` исключая файлы с суффиксом `-dev.` или `-test.` в имени файла.
 
-To determine whether the file matches the mask the following algorithm is applied:
- - take for the check the next absolute file path inside the repository;
- - compare this path with configured include or exclude path mask or plain path:
-   - the path in `add` is concatenated with the mask or raw path from include or exclude config directive;
-   - two paths are compared with the use of glob patterns: if file matches the mask, then it will be included (for `includePaths`) or excluded (for `excludePaths`), the algorithm is ended.
- - compare this path with configured include or exclude path mask or plain path with additional pattern:
-   - the path in `add` is concatenated with the mask or raw path from include or exclude config directive and concatenated with additional suffix pattern `**/*`;
-   - two paths are compared with the use of glob patterns: if file matches the mask, then it will be included (for `includePaths`) or excluded (for `excludePaths`), the algorithm is ended.
+При определении соответствия файла маске, применяется следующий алгоритм:
+ - определяется абсолютный путь к очередному файлу в репозитории;
+ - путь сравнивается с масками, определенными в `includePaths` и `excludePaths`, либо с конкретным указанным путем:
+   - путь в параметре `add` объединяется с маской или указанным путем из параметров `includePaths` и `excludePaths`;
+   - оба варианта проверяются с учетом правил применения глобальных шаблонов: если файл удовлетворяет маске — он включается (в случае `includePaths`), либо исключается (в случае `excludePaths`).
+ - путь сравнивается с масками, определенными в `includePaths` и `excludePaths`, либо с конкретным указанным путем с учетом дополнительных условий:
+   - путь в параметре `add` объединяется с маской или указанным путем из параметров `includePaths` и `excludePaths` и объединяется с суффиксом `**/*` к шаблону;
+   - оба варианта проверяются с учетом правил применения глобальных шаблонов: если файл удовлетворяет маске — он включается (в случае `includePaths`), либо исключается (в случае `excludePaths`).
 
-> The second step with adding `**/*` template is for convenience: the most frequent use case of a _git mapping_ with filters is to configure recursive copying for the directory. Adding `**/*` makes enough to specify the directory name only, and its entire content matches the filter.
+> Последний шаг в алгоритме, с добалвнием  суффикса`**/*` сделан для удобства — вам достаточно указать название папки в параметрах *git-маппинга*, чтобы все ее содержимое удовлетворяло шаблону параметра.
 
-Masks may contain the following patterns:
+Маска может содержать следующие шаблоны:
 
-- `*` — matches any file. This pattern includes `.` and exclude `/`
-- `**` — matches directories recursively or files expansively
-- `?` — matches any one character. Equivalent to /.{1}/ in regexp
-- `[set]` — matches any one character in the set. Behaves exactly like character sets in regexp, including set negation ([^a-z])
-- `\` — escapes the next metacharacter
+- `*` — удовлетворяет любому файлу. Шаблон включает `.` и исключает `/`.
+- `**` — удовлетворяет директории со всем ее содержимым, рекурсивно.
+- `?` — удовлетворяет любому однму символу в имени файла (аналогично regexp-шаблону `.{1}`)
+- `[set]` — удовлетворяет любому символу из указанного набора символов. Аналогично использованию в regexp-шаблонах, включая указание диапазонов типа `[^a-z]`.
+- `\` — экранирует следующий символ
 
-Mask that starts with `*` or `**` patterns should be escaped with quotes in `werf.yaml` file:
- - `"*.rb"` — with double quotes
-- `'**/*'` — with single quotes
+Маска, которая начинается с шаблона `*` или `**`, должна быть взята в одинарныеили двойные кавычки в `werf.yaml`:
+ - `"*.rb"` — двойные кавычки
+- `'**/*'` — одинарные кавычки
 
-Examples of filters:
+Примеры фильтров:
 
 ```yaml
 add: /src
 to: /app
 includePaths:
-# match all php files residing directly in /src
+# удовлетворяет всем php файлам, расположенным конкретно в папке /src
 - '*.php'
 
-# matches recursively all php files from /src
-# (also matches *.php because '.' is included in **)
+# удовлетворяет всем phph файлам рекурсивно, начиная с папки /src
+# (также удовлетворяет файлам *.php, т.к. '.' включается шаблон **)
 - '**/*.php'
 
-# matches all files from /src/module1 recursively
-# an example of implicit adding of **/*
+# удовлетворяет всем файлам в папке /src/module1 рекурсивно
 - module1
 ```
 
-`includePaths` filter can be used to copy one file without renaming:
+Фильтр `includePaths` может применяться для копирования одного файла без изменения имени. Пример:
 ```yaml
 git:
 - add: /src
@@ -279,9 +282,9 @@ git:
   includePaths: index.php
 ```
 
-### Target paths overlapping
+### Наложение путей копирования
 
-If multiple git mappings are added, you should remember those intersecting paths defined in `to` may result in the inability to add files to the image. For example:
+Если вы определяете несколько *git-маппингов*, вы дожлны учитывать, что при наложении путей в образе в парамерре `to` вы можете столкнуться с невозможностью добавления файлов. Пример:
 
 ```yaml
 git:
@@ -291,23 +294,23 @@ git:
   to: /app/assets
 ```
 
-When processing a config, werf calculates the possible intersections among all git mappings concerning `includePaths` and `excludePaths` filters. If an intersection is detected, then werf can resolve simple conflicts with implicitly adding `excludePaths` into the git mapping. In other cases, the build ends with an error. However, implicit `excludePaths` filter can have undesirable effects, so try to avoid conflicts of intersecting paths between configured git mappings.
+Чтобы избежать ошибок сборки, Werf определяет возможные наложения касающиеся фильтров `includePaths` и `excludePaths`, и если такое наложение присутствует, то Werf пытается разрешить самые простые конфликты, неявно добавляя соответсвущий параметр `excludePaths` в git-маппинг. Однако, такое поведение может все-таки привести к ножиданным результатам, поэтому лучше всего избегать наложения путей приопределении git-маппингов.
 
-Implicit `excludePaths` example:
+В примере выше, Werf в итоге неявно добавит параметр  `excludePaths` и итоговая конфигурация будет равнозначна следующей:
 
 ```yaml
 git:
 - add: /src
   to: /app
-  excludePaths:  # werf add this filter to resolve a conflict
-  - assets       # between paths /src/assets and /assets
+  excludePaths:  # Werf добавил этот фильтр, чтобы исключить конфлакт наложения результирующих путей
+  - assets       # между /src/assets и /assets
 - add: /assets
   to: /app/assets
 ```
 
-## Working with remote repositories
+## Работа с удаленными репозиториями
 
-Werf may use remote repositories as file sources. For this purpose, the _git mapping_ configuration contains an `url` parameter where you should specify the repository address. Werf supports `https` and `git+ssh` protocols.
+Werf может использовать  удаленные (внешние) репозитории в качестве источника файлов. For this purpose, the _git mapping_ configuration contains an `url` parameter where you should specify the repository address. Werf supports `https` and `git+ssh` protocols.
 
 ### https
 
