@@ -64,7 +64,7 @@ summary: |
 
 ***Git-маппинг*** определяет, какой файл или папка из git-репозитория должны быть добавлены в конкретное место образа. Git-репозиторий может быть как локальным репозиторием, в котором находится файл конфигурации сборки (`werf.yaml`), так и удаленным (внешним) репозиторием (в этом случае указывается адрес репозитория и версия кода — ветка, тэг или конкретный коммит).
 
-Werf добавляет файлы из git-репозитория в образ копируя их с помощью [git archive](https://git-scm.com/docs/git-archive) (при первоначальном добавлении файлов) либо накладывая git patch. При повторных сборках и появлении изменений в git-репозитории, Werf добавляет patch к собранному ранее образу — чтобы в конечном образе отразить необходимые изменения файлов и папок. Более подробно, механизм переноса файлов в образ и накладывания патчей рассматривается в соответствующей секции [далее...](#more-details-gitarchive-gitcache-gitlatestpatch)
+Werf добавляет файлы из git-репозитория в образ копируя их с помощью [git archive](https://git-scm.com/docs/git-archive) (при первоначальном добавлении файлов) либо накладывая git patch. При повторных сборках и появлении изменений в git-репозитории, Werf добавляет patch к собранному ранее образу — чтобы в конечном образе отразить необходимые изменения файлов и папок. Более подробно, механизм переноса файлов в образ и накладывания патчей рассматривается в соответствующей секции [далее...](#подробнее-про-gitarchive-gitcache-gitlatestpatch)
 
 Конфигурация _git-маппинга_ поддерживает фильтры, что позволяет используя необходимое количество _git_маппингов_ сформировать практически любую файловую структуру в образе. Также, вы можете указать группу и владельца конечных файлов в образе, что освобождает от необходимости делать это (`chown`) отдельной командой.
 
@@ -150,7 +150,7 @@ git:
 
 ![image files tree]({{ site.baseurl }}/images/build/git_mapping_04.png)
 
-Следует отметить, что конфигурация git-маппинга не похожа например на копирование типа `cp -r / src / app`. Параметр `add` указывает *содержимое* каталога, которое будет рекурсивно копироваться из репозитория. Поэтому, если папка `/assets` со всем содержимым из репозитория должна быть скопирована в папку `/app/assets` образа, то имя *assets* вы должны указать два раза. Либо, как вариант, вы можете использовать [фильтр](#using-filters), — например параметр `includePaths`.
+Следует отметить, что конфигурация git-маппинга не похожа например на копирование типа `cp -r / src / app`. Параметр `add` указывает *содержимое* каталога, которое будет рекурсивно копироваться из репозитория. Поэтому, если папка `/assets` со всем содержимым из репозитория должна быть скопирована в папку `/app/assets` образа, то имя *assets* вы должны указать два раза. Либо, как вариант, вы можете использовать [фильтр](#использование-фильтров), — например параметр `includePaths`.
 
 Примеры обоих вариантов, которые вы можете использовать для достижения одинакового результата:
 ```yaml
@@ -284,7 +284,7 @@ git:
 
 ### Наложение путей копирования
 
-Если вы определяете несколько *git-маппингов*, вы дожлны учитывать, что при наложении путей в образе в парамерре `to` вы можете столкнуться с невозможностью добавления файлов. Пример:
+Если вы определяете несколько *git-маппингов*, вы должны учитывать, что при наложении путей в образе в параметре `to` вы можете столкнуться с невозможностью добавления файлов. Пример:
 
 ```yaml
 git:
@@ -294,7 +294,7 @@ git:
   to: /app/assets
 ```
 
-Чтобы избежать ошибок сборки, Werf определяет возможные наложения касающиеся фильтров `includePaths` и `excludePaths`, и если такое наложение присутствует, то Werf пытается разрешить самые простые конфликты, неявно добавляя соответсвущий параметр `excludePaths` в git-маппинг. Однако, такое поведение может все-таки привести к ножиданным результатам, поэтому лучше всего избегать наложения путей приопределении git-маппингов.
+Чтобы избежать ошибок сборки, Werf определяет возможные наложения касающиеся фильтров `includePaths` и `excludePaths`, и если такое наложение присутствует, то Werf пытается разрешить самые простые конфликты, неявно добавляя соответствущий параметр `excludePaths` в git-маппинг. Однако, такое поведение может все-таки привести к ножиданным результатам, поэтому лучше всего избегать наложения путей при определении git-маппингов.
 
 В примере выше, Werf в итоге неявно добавит параметр  `excludePaths` и итоговая конфигурация будет равнозначна следующей:
 
@@ -310,11 +310,11 @@ git:
 
 ## Работа с удаленными репозиториями
 
-Werf может использовать  удаленные (внешние) репозитории в качестве источника файлов. For this purpose, the _git mapping_ configuration contains an `url` parameter where you should specify the repository address. Werf supports `https` and `git+ssh` protocols.
+Werf может использовать удаленные (внешние) репозитории в качестве источника файлов. Для указания адреса внешнего репозитория используется параметр `url` *git-маппинга*. Werf поддерживает работу с удаленными репозиториями по протоколам `https` и `git+ssh`.
 
 ### https
 
-The syntax for https protocol is:
+Синтаксис для работы по протоколу `https`:
 
 {% raw %}
 ```yaml
@@ -323,9 +323,9 @@ git:
 ```
 {% endraw %}
 
-`https` access may require login and password.
+Указание логина и пароля при доступ по `https` опционально.
 
-For example, login and password from GitLab CI variables:
+Пример доступа к репозиторию из pipeline GitLab CI с использованием переменных окружения:
 
 {% raw %}
 ```yaml
@@ -334,93 +334,95 @@ git:
 ```
 {% endraw %}
 
-In this example, the [env](http://masterminds.github.io/sprig/os.html) method from the sprig library is used to access the environment variables.
+В приведенном примере используется метод [env](http://masterminds.github.io/sprig/os.html) библиотеки [Sprig](http://masterminds.github.io/sprig/) для доступа к переменным окружения.
 
 ### git, ssh
 
-Werf supports access to the repository via the git protocol. Access via this protocol is typically protected using ssh tools: this feature is used by GitHub, Bitbucket, GitLab, Gogs, Gitolite, etc. Most often the repository address looks as follows:
+Доступ к удаленному репозиторию с помощью протокола git защищается с использованием доступа поверх ssh. Это распространенная практика, используемая в частности GitHub, Bitbucket, GitLab, Gogs, Gitolite и т.д. Обычно адрес репозитория выглядит следующим образом:
 
 ```yaml
 git:
 - url: git@gitlab.company.name:project_group/project.git
 ```
 
-To successfully work with remote repositories via ssh, you should understand how werf searches for access keys.
+Для работы с удаленными репозиториями по ssh необходимо понимать, как Werf находит ssh-ключи (читай далее подробнее).
 
+#### Работа с ssh-ключами
 
-#### Working with ssh keys
+Ssh-ключи для доступа предоставляются через ssh-agent. Ssh-agent — это демон, который работает через файловый сокет, путь к которому хранится в переменной окружения `SSH_AUTH_SOCK`. Werf монтирует этот файловый сокет во все _сборочные контейнеры_ и устанавливает переменную окружения `SSH_AUTH_SOCK`. Т.о. соединение с удаленным git-репозиторием устанавливается с использованием ключей, зарегистрированных в запущенном ssh-агенте.
 
-Keys for ssh connects are provided by ssh-agent. The ssh-agent is a daemon that operates via file socket, the path to which is stored in the environment variable `SSH_AUTH_SOCK`. Werf mounts this file socket to all _assembly containers_ and sets the environment variable `SSH_AUTH_SOCK`, i.e., connection to remote git repositories is established with the use of keys that are registered in the running ssh-agent.
+Werf использует следующий алгоритм для определения запущенного ssh-агента:
 
-The ssh-agent is determined as follows:
+- Werf запущен с ключем `--ssh-key` (одним или несколькими):
+  - Запускается временный ssh-агент в который добавляются указанные при запуске Werf ключи. Эти ключи используются при всех операциях с удаленными репозиториями.
+  - Уже запущенный ssh-агент игнорируется.
+- Werf запущен без указания ключа `--ssh-key` и есть запущенный ssh-агент:
+  - Используется переменная окружения `SSH_AUTH_SOCK`, ключи добавляются в соответствующий ssh-агент и используются далее при всех операциях работы с удаленными репозиториями.
+- Werf запущен без указания ключа `--ssh-key` и нет запущенного ssh-агента:
+  - Если существует файл `~/.ssh/id_rsa`, запускается временный ssh-агент, в который добавляется ключ из файла `~/.ssh/id_rsa`.
+- Если ни один из вариантов не применим  — ssh-агент не запускается и при операциях с внешними git-репозиториями не используются никакие ssh-ключи. Сборка образа с объявленными удаленными репозиториями в _git-маппинге_ завершится с ошибкой.
 
-- If werf is started with `--ssh-key` flags (there may be multiple flags):
-  - A temporary ssh-agent runs with defined keys, and it is used for all git operations with remote repositories.
-  - The already running ssh-agent is ignored in this case.
-- No `--ssh-key` flags specified and ssh-agent is running:
-  - `SSH_AUTH_SOCK` environment variable is used, and the keys added to this agent is used for git operations.
-- No `--ssh-key` flags specified and ssh-agent is not running:
-  - If `~/.ssh/id_rsa` file exists, then werf will run the temporary ssh-agent with the  key from `~/.ssh/id_rsa` file.
-- If none of the previous options is applicable, then the ssh-agent is not started, and no keys for git operation are available. Build images with remote _git mappings_ ends with an error.
+## Подробнее про gitArchive, gitCache, gitLatestPatch
 
-## More details: gitArchive, gitCache, gitLatestPatch
+Далее будет более подробно рассмотрен процесс добавления файлов в конечный образ. Как упоминалось ранее, Docker-образ состоит из набора слоёв. Чтобы понимать, какие слои создает Werf, представим что сборка основана на трех коммитах: `1`, `2` и `3`:
 
-Let us review adding files to the resulting image in more detail. As stated earlier, the docker image contains multiple layers. To understand what layers werf create, let's consider the building actions based on three sample commits: `1`, `2` and `3`:
+- Сборка коммита 1. Исходя из конфигурации _git-маппинга_, все соответствующие файлы добавляются в один слой. Сам процесс добавления выполняется с помощью `git archive`. Получившийся слой соответствует стадии _gitArchive_.
+- Сборка коммита 2. Накладывается патч с изменениями файлов, в результате чего получается еще один слой. Получившийся слой соответствует стадии _gitLatestPatch_.
+- Сборка коммита 3. Файлы уже добавлены, и Werf накладывает патч, обновляя слой _gitLatestPatch_.
 
-- Build of commit No. 1. All files are added to a single layer based on the configuration of the _git mappings_. This is done with the help of the git archive. This is the layer of the _gitArchive_ stage.
-- Build of commit No. 2. Another layer is added where the files are changed by applying a patch. This is the layer of the _gitLatestPatch_ stage.
-- Build of commit No. 3. Files have already added, so werf apply patches in the _gitLatestPatch_ stage layer.
-
-Build sequence for these commits may be represented as follows:
+Последовательность сборки для этих коммитов можно представить ​​следующим образом:
 
 | | gitArchive | --- | gitLatestPatch |
 |---|:---:|:---:|:---:|
-| Commit No. 1 is made, build at 10:00 |  files as in commit No. 1 | --- | - |
-| Commit No. 2 is made, build at 10:05 |  files as in commit No. 1 | --- | files as in commit No. 2 |
-| Commit No. 3 is made, build at 10:15 |  files as in commit No. 1 | --- | files as in commit No. 3 |
+| Сделан коммит 1, сборка в 10:00 | файлы согласно коммита 1 | --- | - |
+| Сделан коммит 2, сборка в 10:05 | файлы согласно коммита 1 | --- | файлы согласно коммита 2 |
+| Сделан коммит 3, сборка в 10:15 | файлы согласно коммита 1 | --- | файлы согласно коммита 3 |
 
-A space between the layers in this table is not accidental. After a while, the number of commits grows, and the patch between commit No. 1 and the current commit may become quite large, which will further increase the size of the last layer and the total _stages_ size. To prevent the growth of the last layer werf provides another intermediary stage — _gitCache_.
-How does werf work with these three stages? Now we are going to need more commits to illustrate this, let it be `1`, `2`, `3`, `4`, `5`, `6` and `7`.
+Пустая колонка между стадиями `gitArchive` и `gitLatestPatch` в приведенной последовательности не случайна. С увеличением числа коммитов, размер патча между первым и текущим коммитом будет также расти и может стать довольно большим, что увеличит размер последнего слоя и общий размер всех стадий. Чтобы избежать роста размера слоя стадии `gitLatestPatch`, Werf может добавить промежуточный слой стадии _gitCache_.
 
-- Build of commit No. 1. As before, files are added to a single layer based on the configuration of the _git mappings_. This is done with the help of the git archive. This is the layer of the _gitArchive_ stage.
-- Build of commit No. 2. The size of the patch between `1` and `2` does not exceed 1 MiB, so only the layer of the _gitLatestPatch_ stage is modified by applying the patch between `1` and `2`.
-- Build of commit No. 3. The size of the patch between `1` and `3` does not exceed 1 MiB, so only the layer of the _gitLatestPatch_ stage is modified by applying the patch between `1` and `3`.
-- Build of commit No. 4. The size of the patch between `1` and `4` exceeds 1 MiB. Now _gitCache_ stage layer is added by applying the patch between `1` and `4`.
-- Build of commit No. 5. The size of the patch between `4` and `5` does not exceed 1 MiB, so only the layer of the _gitLatestPatch_ stage is modified by applying the patch between `4` and `5`.
+Чтобы проиллюстрировать, как Werf работает с этими тремя стадиями и как изменится алгоритм по сравнению с приведенным ранее, возьмем пример работы с семью коммитами. Алгоритм будет следующий:
 
-This means that as commits are added starting from the moment the first build is done, big patches are gradually accumulated into the layer for the _gitCache_ stage, and only patches with moderate size are applied in the layer for the last _gitLatestPatch_ stage. This algorithm reduces the size of _stages_.
+- Сборка коммита 1. Файлы также добавляются в единый слой исходя из конфигурации _git-маппинга_. Процесс добавления выполняется с помощью `git archive`. Получившийся слой соответствует стадии _gitArchive_.
+- Сборка коммита 2. Размер патча между коммитами `1` и `2` не превышает 1 MiB, поэтому создается один слой стадии _gitLatestPatch_, содержащий изменения между коммитами `1` и `2`.
+- Сборка коммита 3. Размер патча между коммитами `1` и `3` не превышает 1 MiB, поэтому слой, соответствующий стадии _gitLatestPatch_ заменяется слоем, содержащим изменения между коммитами `1` и `3`.
+- Сборка коммита 4. Размер патча между коммитами `1` и `4` превышает 1 MiB. Добавляется слой стадии _gitCache_, содержащий разность между коммитами `1` и `4`.
+- Сборка коммита 5. Размер патча между коммитами `4` и `5` не превышает 1 MiB, поэтому создается один слой _gitLatestPatch_, содержащий разность между коммитами `4` и `5`.
 
-| | gitArchive | gitCache | gitLatestPatch |
-|---|:---:|:---:|:---:|
-| Commit No. 1 is made, build at 12:00 |  1 |  - | - |
-| Commit No. 2 is made, build at 12:19 |  1 |  - | 2 |
-| Commit No. 3 is made, build at 12:25 |  1 |  - | 3 |
-| Commit No. 4 is made, build at 12:45 |  1 | *4 | - |
-| Commit No. 5 is made, build at 12:57 |  1 |  4 | 5 |
-
-\* — the size of the patch for commit `4` exceeded 1 MiB, so this patch is applied in the layer for the _gitCache_ stage.
-
-### Rebuild of gitArchive stage
-
-For various reasons, you may want to reset the _gitArchive_ stage, for example, to decrease the size of _stages_ and the image.
-
-To illustrate the unnecessary growth of image size assume the rare case of 2GiB file in git repository. First build tranfers this file in the layer of the _gitArchive_ stage. Then some optimization occured and file is recompiled and it's size is decreased to 1.6GiB. The build of this new commit applies patch in the layer of the _gitCache_ stage. The image size become 3.6GiB of which 2GiB is a cached old version of the big file. Rebuilding from _gitArchive_ stage can reduce image size to 1.6GiB. This situation is quite rare but gives a good explanation of correlation between the layers of the _git stages_.
-
-You can reset the _gitArchive_ stage specifying the **[werf reset]** or **[reset werf]** string in the commit message. Let us assume that, in the previous example commit `6` contains **[werf reset]** in its message, and then the builds would look as follows:
+Описанный алгоритм иллюстрирует, что коммиты добавляются начиная с момента сборки, но когда объем патчей становится довольно большим, накопленные изменения сохраняются в отдельном слое — слое стадии _gitCache_. При наличии слоя стадии _gitCache_, наложение патчей при последующих коммитах, для формирования слоя стадии _gitLatestPatch_ будет вестись относительно слоя стадии _gitCache_. Такое поведение позволяет сократить общий объем стадий.
 
 | | gitArchive | gitCache | gitLatestPatch |
 |---|:---:|:---:|:---:|
-| Commit No. 1 is made, build at 12:00 |  1 |  - | - |
-| Commit No. 2 is made, build at 12:19 |  1 |  - | 2 |
-| Commit No. 3 is made, build at 12:25 |  1 |  - | 3 |
-| Commit No. 4 is made, build at 12:45 |  1 |  4 | - |
-| Commit No. 5 is made, build at 12:57 |  1 |  4 | 5 |
-| Commit No. 6 is made, build at 13:22 |  *6 |  - | - |
+| Сделан коммит 1, сборка в 12:00 |  1 |  - | - |
+| Сделан коммит 2, сборка в 12:19 |  1 |  - | 2 |
+| Сделан коммит 3, сборка в 12:25 |  1 |  - | 3 |
+| Сделан коммит 4, сборка в 12:45 |  1 | *4 | - |
+| Сделан коммит 5, сборка в 12:57 |  1 |  4 | 5 |
 
-\* — commit `6` contains the **[werf reset]** string in its message, so the _gitArchive_ stage is rebuilt.
+\* — размер патча для коммита `4` превышает 1 MiB, поэтому на основе патча создается слой для стадии _gitCache_.
 
-### _git stages_ and rebasing
+### Сброс стадии gitArchive
 
-Each _git stage_ stores service labels with commits SHA from which this _stage_ was built.
-These commits are used for creating patches on the next _git stage_ (in a nutshell, `git diff COMMIT_FROM_PREVIOUS_GIT_STAGE LATEST_COMMIT` for each described _git mapping_).
-So, if any saved commit is not in a git repository (e.g., after rebasing) then werf rebuilds that stage with latest commits at the next build.
+В некоторых случая вам может потребоваться сбросить стадию _gitArchive_. Например, чтобы уменьшить общий размер стадии и размер конечного образа.
+
+Чтобы показать, когда проблема нежелательного роста образа может стать актуальной, рассмотрим (хоть и довольно редкий) случай добавления файла размером 2GiB в git-репозиторий. При первой сборке произойдет добавление файла в слой стадии _gitArchive_. Допустим, затем, в результате оптимизайций, размер файла уменьшился до 1.6GiB. Новый коммит с такими изменениями создаст слой стадии _gitCache_. Размер образа станет 3.6GiB, 2GiB из которых — старая версия файла в кэше. Принудителная пересборка стадии _gitArchive_ позволит уменьшить размер образа до 1.6GiB. Приведенный пример хоть и редкий, но позволяет наглядно показать зависимость между слоями стадий.
+
+Сбросить стадию _gitArchive_ можно указав в сообщении к коммиту строку **[werf reset]** или **[reset werf]**.
+
+Предположим, что в приведенном выше примере был сделан коммит `6` содержащий в сообщении строку **[werf reset]**. Тогда историю сборки можно представить примерно так:
+
+| | gitArchive | gitCache | gitLatestPatch |
+|---|:---:|:---:|:---:|
+| Сделан коммит 1, сборка в 12:00 |  1 |  - | - |
+| Сделан коммит 2, сборка в 12:19 |  1 |  - | 2 |
+| Сделан коммит 3, сборка в 12:25 |  1 |  - | 3 |
+| Сделан коммит 4, сборка в 12:45 |  1 | *4 | - |
+| Сделан коммит 5, сборка в 12:57 |  1 |  4 | 5 |
+| Сделан коммит 6, сборка в 13:22 |  *6 |  - | - |
+
+\* — коммит `6` содержит строку **[werf reset]** в сообщении, что приводит к пересборке стадии _gitArchive_.
+
+### Rebase и _git-стадии_
+
+Каждая стадия хранит специальные метки с данными SHA тех коммитов, из которых стадия было собрана. Эти коммиты используются для создания патчей следующей по алгоритму стадии (по сути это `git diff COMMIT_FROM_PREVIOUS_GIT_STAGE LATEST_COMMIT` для каждого _git- маппинга_).
+
+Таким образом, если какой-либо сохраненный коммит не находится в git-репозитории (например, после выполнения rebase), то Werf пересобирает эту стадию с учетом последнего коммита.
