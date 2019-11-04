@@ -27,9 +27,7 @@ summary: |
     <span class="na">HEALTHCHECK</span><span class="pi">:</span> <span class="s">&lt;healthcheck&gt;</span></code></pre></div></div>
 ---
 
-[Dockerfile instructions](https://docs.docker.com/engine/reference/builder/) can be divided into two groups: build-time instructions and other instructions that effect on an image manifest. Build-time instructions do not make sense in a werf build process. Therefore, werf supports only following instructions:
-
-Инструкции [Dockerfile'а](https://docs.docker.com/engine/reference/builder/) можно условно разделить на две группы: инструкции сборки, и другие инструкции, которые влияют на manifest Docker-образа.
+Инструкции в [Dockerfile](https://docs.docker.com/engine/reference/builder/) можно условно разделить на две группы: инструкции сборки и другие инструкции, которые влияют на manifest Docker-образа.
 
 Werf поддерживает некоторые инструкции Dockerfile, кроме инструкций сборки, а именно:
 

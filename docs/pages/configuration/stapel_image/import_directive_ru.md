@@ -1,5 +1,5 @@
 ---
-title: Импортирование из артефактов и образов
+title: Импорт из артефактов и образов
 sidebar: documentation
 permalink: ru/documentation/configuration/stapel_image/import_directive.html
 ref: documentation_configuration_stapel_image_import_directive
@@ -26,14 +26,14 @@ summary: |
   </code></pre></div></div>
 ---
 
-The size of the image can be increased several times due to the assembly tools and source files, while the user does not need them.
-To solve such problems, Docker community suggests doing the installation of tools, the assembly, and removal in one step.
+Из-за используемых инструментов сборки, литбо просто из-за исходных файлов размер конечного образа может увеличиваться в несколько раз. Зачастую эти файлы не нужны в конечном образе. Для решения таких проблем, комьюнити Docker предлагает выполнять установки инструментов, сборку и удаление ненужных файлов за один шаг.
 
+Условный пример:
 ```
 RUN “download-source && cmd && cmd2 && remove-source”
 ```
 
-> To obtain a similar effect when using werf, it is sufficient describing the instructions in one _user stage_. For example, _shell assembly instructions_ for the _install stage_ (similarly for _ansible_):
+> Аналогичный пример может быть реализован и в Werf. Для этого достаточно описать инструкции в одной _пользовательской стадии_. Пример при использовании _shell-сборщика_ для стадии _install_ (аналогичен и для _ansible-сборщика_):
 ```yaml
 shell:
   install:
@@ -43,9 +43,9 @@ shell:
   - "remove-source"
 ```
 
-However, with this method, it is not possible using a cache, so toolkit installation runs each time.
+Однако, при использовании такого метода кэширование работать не будет, и установка инструментов сборки будет выполняться каждый раз.
 
-Another solution is using multi-stage builds, which are supported starting with Docker 17.05.
+Другой способ--- использование multi-stage сборки, которая поддерживается начиная с версии 17.05 Docker.
 
 ```
 FROM node:latest AS storefront
@@ -71,21 +71,22 @@ ENTRYPOINT ["java", "-jar", "/app/AtSea-0.0.1-SNAPSHOT.jar"]
 CMD ["--spring.profiles.active=postgres"]
 ```
 
-The meaning of such an approach is as follows, describe several auxiliary images and selectively copy artifacts from one image to another leaving behind everything you do not want in the result image.
+Смысл такого подхода в следующем — описать несколько вспомогательных образов и выборочно копировать артефакты из одного образа в другой, оставляя все то, что не нужно в конечном образе.
 
-We suggest the same, but using [_images_]({{ site.baseurl }}/documentation/configuration/introduction.html#image-config-section) and [_artifacts_]({{ site.baseurl }}/documentation/configuration/introduction.html#artifact-config-section).
+Werf предлагает такой-же подход, но с использованием [_образов_]({{ site.baseurl }}/ru/documentation/configuration/introduction.html#image-config-section) и  [_артефактов_]({{ site.baseurl }}/documentation/configuration/introduction.html#artifact-config-section).
 
-> Why is werf not using multi-stage?
-* Historically, _imports_ appeared much earlier than Docker multi-stage, and
-* Werf gives more flexibility working with auxiliary images
+> Почему Werf не использует multi-stage сборку?
+* Исторически, возможность _импорта_ появилась значительно раньше чем в Docker появилась multi-stage сборка.
+* Werf дает больше гибкости при работе со вспомогательными образами
 
-Importing _resources_ from _images_ and _artifacts_ should be described in `import` directive in _destination image_ config section ([_image_]({{ site.baseurl }}/documentation/configuration/introduction.html#image-config-section) or [_artifact_]({{ site.baseurl }}/documentation/configuration/introduction.html#artifact-config-section)). `import` is an array of records. Each record should contain the following:
+Импорт _ресурсов_ из _образов_ и _артефактов_ должен быть описан в директиве `import` в конфигурации [_образа_]({{ site.baseurl }}/ru/documentation/configuration/introduction.html#image-config-section) или [_артефакта_]({{ site.baseurl }}/ru/documentation/configuration/introduction.html#artifact-config-section)) куда импортируются файлы. `import` — массив записей, каждая из которых дожна содержать следующие параметры:
 
-- `image: <image name>` or `artifact: <artifact name>`: _source image_, image name from which you want to copy files.
-- `add: <absolute path>`: _source path_, absolute file or folder path in _source image_ for copying.
-- `to: <absolute path>`: _destination path_, absolute path in _destination image_. In case of absence, _destination path_ equals _source path_ (from `add` directive).
-- `before: <install || setup>` or `after: <install || setup>`: _destination image stage_, stage for importing files. At present, only _install_ and _setup_ stages are supported.
+- `image: <image name>` или `artifact: <artifact name>`: _исходный образ_, имя образа из которого вы хотите копировать файлы или папки.
+- `add: <absolute path>`: _исходный путь_, абсолютный путь к файлу или папке в _исходном образе_ для копирования.
+- `to: <absolute path>`: _путь назначения_, абсолютный путь в _образе назначения_ (куда импортируются файлы или папки). В случае отсутствия считается равным значению указанному в параметре `add`.
+- `before: <install || setup>` or `after: <install || setup>`: _стадия_ сборки _образа назначения_ для импорта. В настоящий момент возможен импорт только на стадиях _install_ или _setup_.
 
+Пример:
 ```yaml
 import:
 - artifact: application-assets
@@ -97,10 +98,8 @@ import:
   after: setup
 ```
 
-As in the case of adding _git mappings_, masks are supported for including, `include_paths: []`, and excluding files, `exclude_paths: []`, from the specified path.
-You can also define the rights for the imported resources, `owner: <owner>` and `group: <group>`.
-Read more about these in the [git directive article]({{ site.baseurl }}/documentation/configuration/stapel_image/git_directive.html).
+Также как и при конфигурации _git-маппингов_ поддерживаются маски включения и исключения файлов и папок. Для указания маски включения файлов исползуется параметр `include_paths: []`, а для исключения — `exclude_paths: []`. Маски указываются относительно пути источника (параметр `add`). Вы также можете указывать владельца и группу для импортируемых ресурсов с помощью параметров `owner: <owner>` и `group: <group>` соответственно. Это поведение аналогично используемому при добавлении кода из git-репозиториев, и вы можете подробнее почитать об этом в [соответствующем разделе]({{ site.baseurl }}/ru/documentation/configuration/stapel_image/git_directive.html).
 
-> Import paths and _git mappings_ must not overlap with each other.
+> Обратите внимание, что путь импортируемых ресурсов и путь указанный в _git-маппингах_ не должны пересекаться.
 
-Information about _using artifacts_ available in [separate article]({{ site.baseurl }}/documentation/configuration/stapel_artifact.html).
+Подробнее об использовании _артефактов_ можно узнать в [отдельной статье]({{ site.baseurl }}/ru/documentation/configuration/stapel_artifact.html).

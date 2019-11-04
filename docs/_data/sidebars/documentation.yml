@@ -344,7 +344,7 @@ entries:
               - title: Использование монтирования для уменьшения размера образа и ускорения сборки
                 url: /ru/documentation/configuration/stapel_image/mount_directive.html
 
-              - title: Импортирование из артефактов и образов
+              - title: Импорт из артефактов и образов
                 url: /ru/documentation/configuration/stapel_image/import_directive.html
 
               - title: Полный список директив
