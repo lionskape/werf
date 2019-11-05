@@ -88,5 +88,5 @@ func purgeHomeWerfFiles(dryRun bool) error {
 		return nil
 	}
 
-	return util.RemoveHostDirs(werf.GetHomeDir(), pathsToRemove)
+	return util.RemoveHostDirsWithLinuxContainer(werf.GetHomeDir(), pathsToRemove)
 }

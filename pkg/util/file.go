@@ -1,12 +1,8 @@
 package util
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
-
-	"github.com/flant/werf/pkg/docker"
 )
 
 // FileExists returns true if path exists
@@ -42,31 +38,4 @@ func isNotExistError(err error) bool {
 
 func IsNotADirectoryError(err error) bool {
 	return strings.HasSuffix(err.Error(), "not a directory")
-}
-
-func RemoveHostDirs(mountDir string, dirs []string) error {
-	var containerDirs []string
-	for _, dir := range dirs {
-		containerDirs = append(containerDirs, ToContainerPath(dir))
-	}
-
-	args := []string{
-		"--rm",
-		"--volume", fmt.Sprintf("%s:%s", mountDir, ToContainerPath(mountDir)),
-		"alpine",
-		"rm", "-rf",
-	}
-
-	args = append(args, containerDirs...)
-
-	return docker.CliRun(args...)
-}
-
-func ToContainerPath(path string) string {
-	return filepath.ToSlash(
-		strings.TrimPrefix(
-			path,
-			filepath.VolumeName(path),
-		),
-	)
 }

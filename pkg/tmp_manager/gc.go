@@ -110,7 +110,7 @@ func gc(dryRun bool) error {
 		}
 
 		if !dryRun {
-			if err := util.RemoveHostDirs(werf.GetTmpDir(), projectDirsToRemove); err != nil {
+			if err := util.RemoveHostDirsWithLinuxContainer(werf.GetTmpDir(), projectDirsToRemove); err != nil {
 				removeErrors = append(removeErrors, fmt.Errorf("unable to remove tmp projects dirs %s: %s", strings.Join(projectDirsToRemove, ", "), err))
 			}
 		}
