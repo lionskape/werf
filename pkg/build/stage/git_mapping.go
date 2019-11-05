@@ -50,7 +50,6 @@ type GitMapping struct {
 	GitRepoCache     *GitRepoCache
 
 	Name               string
-	As                 string
 	Branch             string
 	Tag                string
 	Commit             string
