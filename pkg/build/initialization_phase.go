@@ -436,7 +436,7 @@ func gitLocalPathInit(localGitMappingConfig *config.GitLocal, localGitRepo *git_
 func baseGitMappingInit(local *config.GitLocalExport, imageName string, c *Conveyor) *stage.GitMapping {
 	var stageDependencies map[stage.StageName][]string
 	if local.StageDependencies != nil {
-		stageDependencies = stageDependenciesToMap(local.StageDependencies)
+		stageDependencies = stageDependenciesToMap(local.GitMappingStageDependencies())
 	}
 
 	gitMapping := &stage.GitMapping{
@@ -447,12 +447,12 @@ func baseGitMappingInit(local *config.GitLocalExport, imageName string, c *Conve
 		ScriptsDir:           getImageScriptsDir(imageName, c),
 		ContainerScriptsDir:  getImageScriptsContainerDir(c),
 
-		RepoPath: path.Join("/", local.Add),
+		RepoPath: local.GitMappingAdd(),
 
-		Cwd:                local.Add,
-		To:                 local.To,
-		ExcludePaths:       local.ExcludePaths,
-		IncludePaths:       local.IncludePaths,
+		Cwd:                local.GitMappingAdd(),
+		To:                 local.GitMappingTo(),
+		ExcludePaths:       local.GitMappingExcludePath(),
+		IncludePaths:       local.GitMappingIncludePaths(),
 		Owner:              local.Owner,
 		Group:              local.Group,
 		StagesDependencies: stageDependencies,

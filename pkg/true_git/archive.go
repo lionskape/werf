@@ -9,10 +9,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
-	"strings"
+
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/flant/logboek"
-	uuid "github.com/satori/go.uuid"
+	"github.com/flant/werf/pkg/util"
 )
 
 type ArchiveOptions struct {
@@ -101,25 +102,25 @@ func writeArchive(out io.Writer, gitDir, workTreeDir string, withSubmodules bool
 			}
 		}
 
-		var path string
+		var relPath string
 		if absPath == workTreeDir {
-			path = "."
+			relPath = "."
 		} else {
-			path = strings.TrimPrefix(absPath, NormalizeDirectoryPrefix(workTreeDir))
+			relPath = rel(absPath, workTreeDir)
 		}
 
-		if NormalizeAbsolutePath(path) == NormalizeAbsolutePath(opts.PathFilter.BasePath) {
+		if relPath == opts.PathFilter.BasePath || relPath == "." && opts.PathFilter.BasePath == "" {
 			if info.IsDir() {
 				desc.Type = DirectoryArchive
 
 				if debugArchive() {
-					fmt.Printf("Found BasePath `%s` directory: directory archive type\n", path)
+					fmt.Printf("Found BasePath `%s` directory: directory archive type\n", relPath)
 				}
 			} else {
 				desc.Type = FileArchive
 
 				if debugArchive() {
-					fmt.Printf("Found BasePath `%s` file: file archive\n", path)
+					fmt.Printf("Found BasePath `%s` file: file archive\n", relPath)
 				}
 			}
 		}
@@ -128,14 +129,14 @@ func writeArchive(out io.Writer, gitDir, workTreeDir string, withSubmodules bool
 			return nil
 		}
 
-		if !opts.PathFilter.IsFilePathValid(path) {
+		if !opts.PathFilter.IsFilePathValid(relPath) {
 			if debugArchive() {
-				fmt.Printf("Excluded path `%s` by path filter %s\n", path, opts.PathFilter.String())
+				fmt.Printf("Excluded path `%s` by path filter %s\n", relPath, opts.PathFilter.String())
 			}
 			return nil
 		}
 
-		archivePath := opts.PathFilter.TrimFileBasePath(path)
+		archivePath := util.ToLinuxContainerPath(opts.PathFilter.TrimFileBasePath(relPath))
 
 		desc.IsEmpty = false
 
@@ -149,7 +150,7 @@ func writeArchive(out io.Writer, gitDir, workTreeDir string, withSubmodules bool
 				Format:     tar.FormatGNU,
 				Typeflag:   tar.TypeSymlink,
 				Name:       archivePath,
-				Linkname:   string(linkname),
+				Linkname:   linkname,
 				Mode:       int64(info.Mode()),
 				Size:       info.Size(),
 				ModTime:    info.ModTime(),
@@ -161,7 +162,7 @@ func writeArchive(out io.Writer, gitDir, workTreeDir string, withSubmodules bool
 			}
 
 			if debugArchive() {
-				fmt.Printf("Added archive symlink `%s` -> `%s`\n", path, linkname)
+				fmt.Printf("Added archive symlink `%s` -> `%s`\n", relPath, linkname)
 			}
 
 			return nil
@@ -187,7 +188,7 @@ func writeArchive(out io.Writer, gitDir, workTreeDir string, withSubmodules bool
 
 		_, err = io.Copy(tw, file)
 		if err != nil {
-			return fmt.Errorf("unable to write data to tar archive from file `%s`: %s", path, err)
+			return fmt.Errorf("unable to write data to tar archive from file `%s`: %s", relPath, err)
 		}
 
 		err = file.Close()
@@ -196,7 +197,7 @@ func writeArchive(out io.Writer, gitDir, workTreeDir string, withSubmodules bool
 		}
 
 		if debugArchive() {
-			logboek.LogF("Added archive file '%s'\n", path)
+			logboek.LogF("Added archive file '%s'\n", relPath)
 		}
 
 		return nil
