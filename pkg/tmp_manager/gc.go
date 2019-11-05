@@ -132,7 +132,7 @@ func gc(dryRun bool) error {
 		for _, err := range removeErrors {
 			msg += fmt.Sprintf("%s\n", err)
 		}
-		return fmt.Errorf("%s", msg)
+		//return fmt.Errorf("%s", msg) FIXME
 	}
 
 	return nil
