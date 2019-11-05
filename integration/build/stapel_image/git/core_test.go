@@ -43,6 +43,9 @@ var _ = Describe("core", func() {
 		fileDataToAdd := []byte("test")
 		fileDataToModify := []byte("test2")
 
+		gitExecutableFilePerm := os.FileMode(0755)
+		gitOrdinaryFilePerm := os.FileMode(0644)
+
 		type fileLifecycleEntry struct {
 			name   string
 			data   []byte
@@ -52,7 +55,20 @@ var _ = Describe("core", func() {
 
 		createFileFunc := func(filePath string, fileData []byte, filePerm os.FileMode) {
 			utils.CreateFile(filePath, fileData)
-			Ω(os.Chmod(filePath, filePerm)).Should(Succeed())
+
+			gitUpdateIndexCommandArgs := []string{"update-index", "--add"}
+			if filePerm == gitExecutableFilePerm {
+				gitUpdateIndexCommandArgs = append(gitUpdateIndexCommandArgs, "--chmod=+x")
+			} else {
+				gitUpdateIndexCommandArgs = append(gitUpdateIndexCommandArgs, "--chmod=-x")
+			}
+			gitUpdateIndexCommandArgs = append(gitUpdateIndexCommandArgs, filePath)
+
+			utils.RunSucceedCommand(
+				testDirPath,
+				"git",
+				gitUpdateIndexCommandArgs...,
+			)
 		}
 
 		fileLifecycleEntryItBody := func(entry fileLifecycleEntry) {
@@ -105,18 +121,18 @@ var _ = Describe("core", func() {
 			Entry("should add file (0755)", fileLifecycleEntry{
 				name: fileNameToAdd,
 				data: fileDataToAdd,
-				perm: 0755,
+				perm: gitExecutableFilePerm,
 			}),
 			Entry("should add file (0644)", fileLifecycleEntry{
 				name: fileNameToAdd,
 				data: fileDataToAdd,
-				perm: 0644,
+				perm: gitOrdinaryFilePerm,
 			}),
 		)
 
 		Context("when gitArchive stage with file is built", func() {
 			BeforeEach(func() {
-				createFileFunc(filepath.Join(testDirPath, fileNameToAddAndModify), fileDataToAdd, 0755)
+				createFileFunc(filepath.Join(testDirPath, fileNameToAddAndModify), fileDataToAdd, gitExecutableFilePerm)
 				addAndCommitFile(testDirPath, fileNameToAddAndModify, "Add file "+fileNameToAddAndModify)
 
 				utils.RunSucceedCommand(
@@ -131,27 +147,27 @@ var _ = Describe("core", func() {
 				Entry("should add file (0755)", fileLifecycleEntry{
 					name: fileNameToAdd,
 					data: fileDataToAdd,
-					perm: 0755,
+					perm: gitExecutableFilePerm,
 				}),
 				Entry("should add file (0644)", fileLifecycleEntry{
 					name: fileNameToAdd,
 					data: fileDataToAdd,
-					perm: 0644,
+					perm: gitOrdinaryFilePerm,
 				}),
 				Entry("should modify file", fileLifecycleEntry{
 					name: fileNameToAddAndModify,
 					data: fileDataToModify,
-					perm: 0755,
+					perm: gitExecutableFilePerm,
 				}),
 				Entry("should change file permission (0755->0644)", fileLifecycleEntry{
 					name: fileNameToAddAndModify,
 					data: fileDataToAdd,
-					perm: 0644,
+					perm: gitOrdinaryFilePerm,
 				}),
 				Entry("should modify and change file permission (0755->0644)", fileLifecycleEntry{
 					name: fileNameToAddAndModify,
 					data: fileDataToModify,
-					perm: 0644,
+					perm: gitOrdinaryFilePerm,
 				}),
 				Entry("should delete file", fileLifecycleEntry{
 					name:   fileNameToAddAndModify,
