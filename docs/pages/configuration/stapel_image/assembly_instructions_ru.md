@@ -58,7 +58,7 @@ summary: |
   </a>
 ---
 
-## What is user stages?
+## Пользовательские стадии
 
 ***User stage*** is a [_stage_]({{ site.baseurl }}/documentation/reference/stages_and_images.html) with _assembly instructions_ from config.
 Currently, there are two kinds of assembly instructions: _shell_ and _ansible_. Werf
