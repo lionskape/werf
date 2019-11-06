@@ -382,11 +382,6 @@ func getNonEmptyGitMappings(gitMappings []*stage.GitMapping) ([]*stage.GitMappin
 				return fmt.Errorf("unable to get commit of repo '%s': %s", gitMapping.GitRepo().GetName(), err)
 			}
 
-			cwd := gitMapping.Cwd
-			if cwd == "" {
-				cwd = "/"
-			}
-
 			if empty, err := gitMapping.IsEmpty(); err != nil {
 				return err
 			} else if !empty {

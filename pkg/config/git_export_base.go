@@ -1,6 +1,10 @@
 package config
 
-import "path/filepath"
+import (
+	"os"
+	"runtime"
+	"strings"
+)
 
 type GitExportBase struct {
 	*GitExport
@@ -13,11 +17,11 @@ func (c *ExportBase) GitMappingAdd() string {
 	if c.Add == "/" {
 		return ""
 	}
-	return filepath.ToSlash(c.Add)
+	return gitMappingPath(strings.TrimPrefix(c.Add, "/"))
 }
 
 func (c *ExportBase) GitMappingTo() string {
-	return filepath.ToSlash(c.To)
+	return c.To
 }
 
 func (c *ExportBase) GitMappingIncludePaths() []string {
@@ -39,10 +43,18 @@ func (c *GitExportBase) GitMappingStageDependencies() *StageDependencies {
 func gitMappingPaths(paths []string) []string {
 	var newPaths []string
 	for _, path := range paths {
-		newPaths = append(newPaths, filepath.ToSlash(path))
+		newPaths = append(newPaths, gitMappingPath(path))
 	}
 
 	return newPaths
+}
+
+func gitMappingPath(path string) string {
+	if runtime.GOOS == "windows" {
+		return strings.ReplaceAll(path, "/", string(os.PathSeparator))
+	}
+
+	return path
 }
 
 func (c *GitExportBase) validate() error {
