@@ -60,6 +60,7 @@ summary: |
 
 ## Пользовательские стадии
 
+
 ***User stage*** is a [_stage_]({{ site.baseurl }}/documentation/reference/stages_and_images.html) with _assembly instructions_ from config.
 Currently, there are two kinds of assembly instructions: _shell_ and _ansible_. Werf
 defines 4 _user stages_ and executes them in this order: _beforeInstall_, _install_,
