@@ -60,28 +60,19 @@ summary: |
 
 ## Пользовательские стадии
 
+***Пользовательские стадии*** — это [_стадии_]({{ site.baseurl }}/ru/documentation/reference/stages_and_images.html) со сборочными инструкциями из [конфигурации]({{ site.baseurl}}/ru/documentation/configuration/introduction.html#%D1%87%D1%82%D0%BE-%D1%82%D0%B0%D0%BA%D0%BE%D0%B5-%D0%BA%D0%BE%D0%BD%D1%84%D0%B8%D0%B3%D1%83%D1%80%D0%B0%D1%86%D0%B8%D1%8F-werf). Другими словами, — это стадии, которые конфигурирует пользователь (существуют также служебные стадии, кортоые пользователь конфигурировать не может). В настоящее время существует два вида сборочных инструкций: _shell_ и _ansible_.
 
-***User stage*** is a [_stage_]({{ site.baseurl }}/documentation/reference/stages_and_images.html) with _assembly instructions_ from config.
-Currently, there are two kinds of assembly instructions: _shell_ and _ansible_. Werf
-defines 4 _user stages_ and executes them in this order: _beforeInstall_, _install_,
-_beforeSetup_ and _setup_. Assembly instructions from one stage are executed to
-create one docker layer.
+В Werf существует 4 _пользовательских стадии_, которые исполняются последовательно в следующем порядке _beforeInstall_, _install_, _beforeSetup_ и _setup_. В результате исполнения инструкций какой-либо стадии создается один Docker-слой. Т.е. по одному слою на стадию (не на инструкцию).
 
-## Motivation behind stages
+## Причины использовать стадии
 
-### Opinionated build structure
+### Произвольная структура сборки ???Opinionated build structure
 
-_User stages pattern_ is based on analysis of real applications building
-instructions. It turns out that group assembly instructions into 4 _user stages_
-are enough for most applications. Instructions grouping decrease layers sizes
-and speed up image building.
+Шаблон и механизм работы _пользовательских стадий_ основан на анализе сборки реальных приложений. В результате анализа мы пришли к выводу, что для большинства прилжоений достаточно разбить инструкции сборки на 4 группы — _пользовательские стадии_. Такая группировка уменьшает количество слоев и ускоряет сборку.
 
 ### Framework for a build process
 
-_User stages pattern_ defines a structure for building process and thus set
-boundaries for a developer. This is a high speed up over unstructured
-instructions in Dockerfile because developer knows what kind of instructions
-should be on each _stage_.
+Наличие _пользовательских стадий_ определяет структуру процесса сборки и, таким образом, устанавливает некоторые рамки для разработчика. Не смотря на дополнительное ограничение по сравнению с неструктурированными инструкциями Docker-файла, это наоборот дает выигрыш в скорости, т.к. разработчик знает, какие инструкции должны быть на каком этапе.
 
 ### Run assembly instruction on git changes
 
